@@ -6,6 +6,8 @@ var logger = require('morgan');
 
 var app = express();
 
+app.set('port', process.env.PORT || 15670);
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -16,3 +18,5 @@ app.post('/', (req, res) => {
 });
 
 module.exports = app;
+
+app.listen(app.get('port'))
