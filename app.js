@@ -6,13 +6,21 @@ var logger = require('morgan');
 
 var db = require('./event_details_connector.js');
 
-const MONGO_DB_URI = "mongodb://localhost:27017/events";
+const MONGO_DB_URI = "mongodb://mongo:27017/event-details";
 
 var app = express();
 
-var events = new db.EventDetailsConnector(MONGO_DB_URI);
+var events;
 
-app.set('port', process.env.PORT || 15670);
+try {
+  events = new db.connect(MONGO_DB_URI);
+} catch (err) {
+  console.error("Event details microservice failed to connect to database... exiting");
+  console.error(err.message);
+}
+
+
+app.set('port', process.env.PORT || 15550);
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -36,4 +44,6 @@ function handle_get_events_request(req, res) {
 
 module.exports = app;
 
-app.listen(app.get('port'))
+app.listen(app.get('port'));
+
+console.log("Started event micro dionysus");

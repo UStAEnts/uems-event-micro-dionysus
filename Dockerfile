@@ -8,5 +8,5 @@ RUN npm install
 
 COPY . .
 
-EXPOSE 15670
+EXPOSE 15550
 CMD ["node", "app.js"]

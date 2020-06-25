@@ -1,16 +1,35 @@
 var MongoClient = require('mongodb').MongoClient;
 
+const mongoose = require('mongoose');
+
 const EVENT_DETAILS_COLLECTION = "details"
 
-class EventDetailsConnector {
-    constructor(uri) {
-        MongoClient.connect(uri, function(err, db) {
-            if (err) {
-                throw err;
-            }
+async function connect(uri) {
+    console.log("Connecting to database uri: " + uri);
 
-            this.db = db;
-        });
+    try {
+        client = await MongoClient.connect(uri, {useNewUrlParser: true});
+        let db = client.db("events");
+        console.log("Connected to database");
+        return EventDetailsConnector(db);
+    } catch (err) {
+        console.error(err);
+    }
+
+    // this.db = MongoClient.connect(uri, function(err, db) {
+    //     if (err) {
+    //         throw err;
+    //     }
+
+    //     return db;
+    // });
+
+    // mongoose.connect(uri, {useNewUrlParser: true});
+}
+
+class EventDetailsConnector {
+    constructor(db) {
+        this.db = db
     }
 
     retrieve_all_events() {
@@ -32,3 +51,4 @@ class EventDetailsConnector {
 }
 
 exports.EventDetailsConnector = EventDetailsConnector;
+exports.connect = connect;
