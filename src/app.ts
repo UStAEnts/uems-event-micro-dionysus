@@ -6,7 +6,6 @@ import * as fs from 'fs';
 import { RequestHandler } from "express";
 
 import { Database } from "./EventDetailsConnector";
-import { Db } from "mongodb";
 
 
 let eventsDb: Database.EventDetailsConnector | null = null;
@@ -26,7 +25,7 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
  * the express app
  * @param eventsConnection the resolved database object
  */
-function databaseConnectionReady(eventsConnection: Database.EventDetailsConnector | null) {
+function databaseConnectionReady(eventsConnection: Database.EventDetailsConnector) {
     console.log('database connection is ready');
 
     eventsDb = eventsConnection;
