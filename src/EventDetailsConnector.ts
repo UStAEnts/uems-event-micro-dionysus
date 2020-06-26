@@ -8,16 +8,7 @@ const EVENT_DB = "events"
 
 export namespace Database {
 
-    export function setup(uri: string) {
-        return connect(uri)
-            .then((ed) => ed)
-            .catch(async (err) => {
-                console.error('error setting up database', err);
-                return null;
-            });
-    }
-
-    export async function connect(uri: string) {
+    export async function connect(uri: string): Promise<EventDetailsConnector> {
         try {
             let client = await MongoClient.connect(uri, {
                 useNewUrlParser: true,

@@ -74,10 +74,9 @@ fs.readFile("database.json", { encoding: "utf-8" }, function (err, data) {
 
     const db_info = JSON.parse(data);
 
-    try {
-        Database.setup(db_info.uri).then(databaseConnectionReady);
-    } catch (err) {
+    Database.connect(db_info.uri).then(databaseConnectionReady).catch((err) => {
         console.error("Event details microservice failed to connect to database... exiting");
         console.error(err.message);
-    }
+        process.exit(1);
+    });
 });
