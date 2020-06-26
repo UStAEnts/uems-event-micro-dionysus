@@ -1,4 +1,4 @@
-var MongoClient = require('mongodb').MongoClient;
+const MongoClient = require('mongodb').MongoClient;
 
 // The collection within the event database which contains the event details.
 const EVENT_DETAILS_COLLECTION = "details"
@@ -20,8 +20,7 @@ function setup(uri) {
 async function connect(uri) {
     try {
         client = await MongoClient.connect(uri, {useNewUrlParser: true, useUnifiedTopology: true});
-        let db = client.db(EVENT_DB);
-        return new EventDetailsConnector(db);
+        return new EventDetailsConnector(client.db(EVENT_DB));
     } catch (err) {
         console.error(err);
     }

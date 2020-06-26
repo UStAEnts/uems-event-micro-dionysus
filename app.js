@@ -1,14 +1,14 @@
-var express = require('express');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 
 const fs = require('fs');
 
-var db = require('./event_details_connector.js');
+const db = require('./event_details_connector.js');
 
-var app = express();
+const app = express();
 
-var events_db = null;
+let events_db = null;
 
 console.log("Starting event micro dionysus...");
 
