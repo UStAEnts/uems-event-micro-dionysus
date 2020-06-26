@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc --listEmittedFiles",
-    "start:old": "node -r source-map-support/register --trace-warnings ./build/index.js",
+    "start:old": "node -r source-map-support/register --trace-warnings ./build/app.js",
     "start": "npm run build && npm run start:old",
     "debug": "SET DEBUG=uems-event-micro-dionysus:* & npm start"
   },
