@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www",
+    "build": "tsc --listEmittedFiles",
+    "start:old": "node -r source-map-support/register --trace-warnings ./build/index.js",
+    "start": "npm run build && npm run start:old",
     "debug": "SET DEBUG=uems-event-micro-dionysus:* & npm start"
   },
   "dependencies": {
