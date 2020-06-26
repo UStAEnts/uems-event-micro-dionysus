@@ -1,54 +1,52 @@
 var MongoClient = require('mongodb').MongoClient;
 
-const mongoose = require('mongoose');
-
+// The collection within the event database which contains the event details.
 const EVENT_DETAILS_COLLECTION = "details"
 
-async function connect(uri) {
-    console.log("Connecting to database uri: " + uri);
+// The database used for storing events.
+const EVENT_DB = "events"
 
+// Called to setup an EventDetailsConnector by connecting to the given mongoDB uri.
+function setup(uri) {
+    return connect(uri).then(function(edConnector) {
+        return edConnector;
+    }).catch(function(err) {
+        console.error("Error setting up database: " + err);
+        return null;
+    });
+}
+
+// Handles connecting to the mongodb database.
+async function connect(uri) {
     try {
-        client = await MongoClient.connect(uri, {useNewUrlParser: true});
-        let db = client.db("events");
-        console.log("Connected to database");
-        return EventDetailsConnector(db);
+        client = await MongoClient.connect(uri, {useNewUrlParser: true, useUnifiedTopology: true});
+        let db = client.db(EVENT_DB);
+        return new EventDetailsConnector(db);
     } catch (err) {
         console.error(err);
     }
-
-    // this.db = MongoClient.connect(uri, function(err, db) {
-    //     if (err) {
-    //         throw err;
-    //     }
-
-    //     return db;
-    // });
-
-    // mongoose.connect(uri, {useNewUrlParser: true});
 }
 
+// Represents a persistent database connection which is used to make various requests to the database.
 class EventDetailsConnector {
     constructor(db) {
         this.db = db
     }
 
-    retrieve_all_events() {
-        var queryPromise = () => {
-            return new Promise((resolve, reject) => {
-                this.db.collection(EVENT_DETAILS_COLLECTION)
-                    .toArray(function(err, data) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve(data);
-                        }
-                    });
+    async retrieve_all_events() {
+        return new Promise((resolve, reject) => {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            collection.find({}).toArray(function(err, data) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(data);
+                }
             });
-        }
-
-        return queryPromise;
+        });
     }
 }
 
 exports.EventDetailsConnector = EventDetailsConnector;
 exports.connect = connect;
+exports.setup = setup;
