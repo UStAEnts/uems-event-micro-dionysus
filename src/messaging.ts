@@ -69,7 +69,7 @@ export namespace Messaging {
                             }
 
                             topics.forEach(function(topic) {
-                                rcv_ch.bindQueue(queue.queue, GATEWAY_EXCHANGE, topic);
+                                rcv_ch.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
                             });
 
                             rcv_ch.consume(queue.queue, 
