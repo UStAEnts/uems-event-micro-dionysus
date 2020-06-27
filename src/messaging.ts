@@ -1,6 +1,6 @@
 import {Channel, connect as amqpConnect, Connection, ConsumeMessage, Message} from "amqplib/callback_api";
 
-import * as fs from "fs/promises";
+const fs = require('fs').promises;
 
 // Represents the RabbitMQ config file in memory.
 type MqConfig = {
@@ -8,7 +8,7 @@ type MqConfig = {
 }
 
 // The queue of requests being received by this microservice.
-const RCV_INBOX_QUEUE_NAME: string = "inbox";
+const RCV_INBOX_QUEUE_NAME: string = "dionysus_inbox";
 
 // The exchange used for sending messages back to the gateway(s).
 const GATEWAY_EXCHANGE: string = "gateway";
@@ -61,7 +61,9 @@ export namespace Messaging {
                             durable: false
                         });
             
-                        rcv_ch.assertQueue(RCV_INBOX_QUEUE_NAME, {exclusive:true}, function (err3: Error, queue) {
+                        rcv_ch.assertQueue(RCV_INBOX_QUEUE_NAME, {
+                            exclusive:false // Exclusive false as there may be multiple instances of this microservice sharing the queue.
+                        }, function (err3: Error, queue) {
                             if (err3) {
                                 reject(err3);
                             }

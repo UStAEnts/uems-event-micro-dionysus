@@ -26,6 +26,8 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
     Promise.resolve(fn(req, res, next)).catch(next);
 });
 
+// Sets up the HTTP server which is used for debugging.
+// Note that in production the http server should not be used as all communication is via RabbitMQ.
 function setupServer() {
     httpServer = createServer(app);
 
@@ -78,7 +80,7 @@ function setupServer() {
                 bind = `port ${addr.port}`;
             }
 
-            console.log(`started event micro dionysus on :${bind}`);
+            console.log(`Started event micro dionysus on :${bind}`);
         }
     );
 
@@ -88,6 +90,16 @@ function setupServer() {
 function req_received(msg: Buffer | null) {
     console.log("Request received: " + msg);
 }
+
+// // Repeatedly attempts to setup
+// async function setupMessenger() {
+//     try {
+//         messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", req_received, [EVENT_DETAILS_SERVICE_TOPIC]);
+//     } catch(err) {
+//         console.log("Attempting to reconnect to RabbitMQ....");
+//         setTimeout(setupMessenger, 2000);
+//     }
+// }
 
 /**
  * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
@@ -99,7 +111,17 @@ async function databaseConnectionReady(eventsConnection: Database.EventDetailsCo
 
     eventsDb = eventsConnection;
 
-    messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", req_received, [EVENT_DETAILS_SERVICE_TOPIC]);
+    // Repeatedly attempt to connect to RabbitMQ messaging system.
+    while (true) {
+        try {
+            messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", req_received, [EVENT_DETAILS_SERVICE_TOPIC]);
+            break;
+        } catch(err) {
+            console.log("Attempting to reconnect to RabbitMQ....");
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+
 
     httpServer = setupServer();
     httpServer.listen(app);
