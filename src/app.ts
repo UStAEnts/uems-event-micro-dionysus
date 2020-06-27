@@ -2,9 +2,8 @@ import express = require('express');
 import cookieParser = require('cookie-parser');
 import logger = require('morgan');
 
-import { createServer, Server } from 'http';
 import * as fs from 'fs';
-import { RequestHandler } from "express";
+import { RequestHandler, Application } from "express";
 
 import { Database } from "./EventDetailsConnector";
 import { Messaging } from "./messaging";
@@ -13,7 +12,6 @@ import { Messaging } from "./messaging";
 const EVENT_DETAILS_SERVICE_TOPIC: string = "events.details.*";
 
 let eventsDb: Database.EventDetailsConnector | null = null;
-let httpServer: Server;
 let messenger: Messaging.Messenger;
 
 /**
@@ -26,80 +24,70 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
     Promise.resolve(fn(req, res, next)).catch(next);
 });
 
-// Sets up the HTTP server which is used for debugging.
-// Note that in production the http server should not be used as all communication is via RabbitMQ.
-function setupServer() {
-    httpServer = createServer(app);
+// // Sets up the HTTP server which is used for debugging.
+// // Note that in production the http server should not be used as all communication is via RabbitMQ.
+// function setupServer() {
+//     httpServer = createServer(app);
 
-    httpServer.on('error',
-        /**
-         * On error, handles listen errors from the http server (specifically EACCES and EADDRINUSE) and will rethrow
-         * the error if not handled.
-         * @param error the error provided by the http server
-         */
+//     httpServer.on('error',
+//         /**
+//          * On error, handles listen errors from the http server (specifically EACCES and EADDRINUSE) and will rethrow
+//          * the error if not handled.
+//          * @param error the error provided by the http server
+//          */
 
-         // FIXME, error: any is used temporarily to fix issues with error.syscall.
-        (error: any) => {
-            if (error.syscall !== 'listen') {
-                throw error;
-            }
+//          // FIXME, error: any is used temporarily to fix issues with error.syscall.
+//         (error: any) => {
+//             if (error.syscall !== 'listen') {
+//                 throw error;
+//             }
 
-            let bind = typeof app.get('port') === 'string'
-                ? 'Pipe ' + app.get('port')
-                : 'Port ' + app.get('port');
+//             let bind = typeof app.get('port') === 'string'
+//                 ? 'Pipe ' + app.get('port')
+//                 : 'Port ' + app.get('port');
 
-            // handle specific listen errors with friendly messages
-            switch (error.code) {
-                case 'EACCES':
-                    console.error(bind + ' requires elevated privileges');
-                    process.exit(1);
-                    break;
-                case 'EADDRINUSE':
-                    console.error(bind + ' is already in use');
-                    process.exit(1);
-                    break;
-                default:
-                    throw error;
-            }
-        }
-    );
-    httpServer.on('listening',
-        /**
-         * On listening handler which will print out the port the server is listening on
-         */
-        () => {
-            let addr = httpServer.address();
+//             // handle specific listen errors with friendly messages
+//             switch (error.code) {
+//                 case 'EACCES':
+//                     console.error(bind + ' requires elevated privileges');
+//                     process.exit(1);
+//                     break;
+//                 case 'EADDRINUSE':
+//                     console.error(bind + ' is already in use');
+//                     process.exit(1);
+//                     break;
+//                 default:
+//                     throw error;
+//             }
+//         }
+//     );
+//     httpServer.on('listening',
+//         /**
+//          * On listening handler which will print out the port the server is listening on
+//          */
+//         () => {
+//             let addr = httpServer.address();
 
-            let bind;
+//             let bind;
 
-            if (addr === null) {
-                bind = 'null value';
-            } else if (typeof (addr) === "string") {
-                bind = `pipe ${addr}`;
-            } else {
-                bind = `port ${addr.port}`;
-            }
+//             if (addr === null) {
+//                 bind = 'null value';
+//             } else if (typeof (addr) === "string") {
+//                 bind = `pipe ${addr}`;
+//             } else {
+//                 bind = `port ${addr.port}`;
+//             }
 
-            console.log(`Started event micro dionysus on :${bind}`);
-        }
-    );
+//             console.log(`Started event micro dionysus on :${bind}`);
+//         }
+//     );
 
-    return httpServer;
-}
+//     return httpServer;
+// }
 
 function req_received(msg: Buffer | null) {
     console.log("Request received: " + msg);
 }
-
-// // Repeatedly attempts to setup
-// async function setupMessenger() {
-//     try {
-//         messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", req_received, [EVENT_DETAILS_SERVICE_TOPIC]);
-//     } catch(err) {
-//         console.log("Attempting to reconnect to RabbitMQ....");
-//         setTimeout(setupMessenger, 2000);
-//     }
-// }
 
 /**
  * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
@@ -122,11 +110,9 @@ async function databaseConnectionReady(eventsConnection: Database.EventDetailsCo
         }
     }
 
-
-    httpServer = setupServer();
-    httpServer.listen(app);
-
-    console.log("Event micro dionysus started successfully");
+    app.listen(process.env.PORT, function () {
+        console.log("Event micro dionysus started successfully");
+    });
 }
 
 console.log("Starting event micro dionysus...");

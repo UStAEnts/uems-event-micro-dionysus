@@ -522,7 +522,7 @@
         "affectsGlobalScope": false
       },
       "./src/app.ts": {
-        "version": "1211bf6ab9d6d4fec6c9139545422d116b70c835a536e01a2d526dfa6a258e12",
+        "version": "1237fb024fd61f2ec0dbab6ff1012fc91f1daa17222c5fec48468bf1395e7fe3",
         "signature": "5ab0082578d32976c6616ce01e0b4d85859b6f6749be207b2548bb5516623999",
         "affectsGlobalScope": false
       },
@@ -1102,7 +1102,6 @@
         "./node_modules/@types/express/index.d.ts",
         "./node_modules/@types/morgan/index.d.ts",
         "./node_modules/@types/node/fs.d.ts",
-        "./node_modules/@types/node/http.d.ts",
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/ts3.2/util.d.ts",
         "./node_modules/@types/node/util.d.ts",
