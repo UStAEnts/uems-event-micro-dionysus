@@ -31,10 +31,30 @@ export namespace Messaging {
             this.rcv_ch = rcv_ch;
         }
 
+        // Once a request has been handled and the response returned this method takes that request message and the response message
+        // content to generate and send the response message.
+        static async sendResponse(msg_content: any, res: Buffer, send_ch: Channel) {
+            if (msg_content.ID == undefined || msg_content.ID == null) {
+                // Without knowing the sender ID cannot send a response.
+                // Message dropped.
+                console.error("Received message without ID, reply cannot be sent - message dropped!");
+                return;
+            }
+
+            const response_msg = {
+                ID: msg_content.ID,
+                payload: res
+            };
+
+            console.log("Response sent");
+            send_ch.publish(GATEWAY_EXCHANGE, '', Buffer.from(JSON.stringify(response_msg)));
+        }
+
         // Configure the connection ready for usage by the microservice.
         // Retuns a setup Messager.
         // The given callback is assigned as the callback for receiving a request to this service.
-        static async configureConnection(conn: Connection, req_recv_callback: (content: Buffer | null) => any, topics: [string]) {
+        // If the callback resolves to null then no response is sent.
+        static async configureConnection(conn: Connection, req_recv_callback: (content: Buffer | null) => Promise<Buffer | null>, topics: [string]) {
             conn.on("error", function(err: Error) {
                 if (err.message !== "Connection closing") {
                     console.error("[AMQP] conn error", err.message);
@@ -73,12 +93,21 @@ export namespace Messaging {
                             });
 
                             rcv_ch.consume(queue.queue, 
-                                function(msg) {
+                                async function(msg) {
                                     if (msg == null) {
-                                        req_recv_callback(null);
-                                    } else {
-                                        req_recv_callback(msg.content);
+                                        return;
                                     }
+
+                                    const content_json = JSON.parse(msg.content.toString());
+
+                                    const res: Buffer | null = await req_recv_callback(content_json);
+                                    
+                                    if (res == null) {
+                                        // A null response indicates no response.
+                                        return;
+                                    }
+
+                                    Messaging.Messenger.sendResponse(content_json, res, send_ch);
                                 }, {noAck: true});
     
                             resolve(new Messaging.Messenger(conn, send_ch, rcv_ch));
@@ -91,7 +120,7 @@ export namespace Messaging {
         // Creates a new Messager to be used by the microservice for communication including receiving requests and sending responses.
         // Uses the config at the given path to configure the connection to rabbitMQ.
         // The given req_recv_callback is called if a message is received with the argument being the message content as an object.
-        static setup(configPath: string, req_recv_callback: (content: Buffer | null) => any, topics: [string]) {
+        static setup(configPath: string, req_recv_callback: (content: Buffer | null) => Promise<Buffer | null>, topics: [string]) {
             return new Promise<Messenger>(async function (resolve, reject) {
                 console.log('Connecting to rabbitmq...');
                 const data = await fs.readFile(configPath);

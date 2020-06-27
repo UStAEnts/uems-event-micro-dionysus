@@ -24,9 +24,29 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
     Promise.resolve(fn(req, res, next)).catch(next);
 });
 
-function req_received(msg: Buffer | null) {
-    console.log("Request received: " + msg);
+
+async function reqReceived(content: Buffer | null): Promise<Buffer | null> {
+    // TODO: checks for message integrity.
+    
+    console.log("Request received: " + content);
+    console.log("Handling request...");
+
+    if (content == null || eventsDb == null) {
+        // Blank (null content) messages are ignored.
+        // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
+
+        console.log("Message content null or DB not ready!, message dropped");
+        return null;
+    }
+    
+    // Currently all events are returned, TODO query processing.
+    const data = await eventsDb.retrieveAllEvents();
+
+    console.log("Response got");
+
+    return Buffer.from(JSON.stringify(data));
 }
+
 
 /**
  * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
@@ -41,7 +61,7 @@ async function databaseConnectionReady(eventsConnection: Database.EventDetailsCo
     // Repeatedly attempt to connect to RabbitMQ messaging system.
     while (true) {
         try {
-            messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", req_received, [EVENT_DETAILS_SERVICE_TOPIC]);
+            messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", reqReceived, [EVENT_DETAILS_SERVICE_TOPIC]);
             break;
         } catch(err) {
             console.log("Attempting to reconnect to RabbitMQ....");
