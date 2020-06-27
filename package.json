@@ -9,6 +9,7 @@
     "debug": "SET DEBUG=uems-event-micro-dionysus:* & npm start"
   },
   "dependencies": {
+    "@types/amqplib": "^0.5.13",
     "cookie-parser": "~1.4.4",
     "debug": "~2.6.9",
     "express": "~4.16.1",

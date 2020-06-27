@@ -506,9 +506,34 @@
         "signature": "b60af9a543b4d5b123f9162105b9b160858c5074eee087aa6cacb9837e76b563",
         "affectsGlobalScope": false
       },
+      "./node_modules/@types/amqplib/properties.d.ts": {
+        "version": "f5fd92915a5b9ca9ce6ed0a526aa4038896eb32599e4ae640c74170150a140bf",
+        "signature": "f5fd92915a5b9ca9ce6ed0a526aa4038896eb32599e4ae640c74170150a140bf",
+        "affectsGlobalScope": false
+      },
+      "./node_modules/@types/amqplib/callback_api.d.ts": {
+        "version": "79256b0ad427ea228ceae3a7b50157dff7ad4e54df01a0a7de95de897b358e4d",
+        "signature": "79256b0ad427ea228ceae3a7b50157dff7ad4e54df01a0a7de95de897b358e4d",
+        "affectsGlobalScope": false
+      },
+      "./src/messaging.ts": {
+        "version": "295f2a6646787efe8861961fefb6674e81074b1b98d7c7019e1aaf63436dd55c",
+        "signature": "4e53673ebf1d7fe0853c344e7da50908bdda7ed645d9016f0e0d3c53904a64d5",
+        "affectsGlobalScope": false
+      },
       "./src/app.ts": {
-        "version": "fadb0b3f1c2cc2e96d5930793dc6075fd6cc15c175fd97da5d4174d7e064fec9",
+        "version": "27d6b60b819b346ca5c3e4d9db5c9d7fbd8d083f92ae36fe04c2bea56a1b6e65",
         "signature": "5ab0082578d32976c6616ce01e0b4d85859b6f6749be207b2548bb5516623999",
+        "affectsGlobalScope": false
+      },
+      "./node_modules/@types/bluebird/index.d.ts": {
+        "version": "1a6100f908d642fe1c74d1354b0e12ee647655b8d355159a1bb4c62ae874ccea",
+        "signature": "1a6100f908d642fe1c74d1354b0e12ee647655b8d355159a1bb4c62ae874ccea",
+        "affectsGlobalScope": false
+      },
+      "./node_modules/@types/amqplib/index.d.ts": {
+        "version": "042193a6e2b5ade8b998d913d934ac9037d6ed1110c6fc6de9b86f0414f840ef",
+        "signature": "042193a6e2b5ade8b998d913d934ac9037d6ed1110c6fc6de9b86f0414f840ef",
         "affectsGlobalScope": false
       },
       "./node_modules/@types/debug/index.d.ts": {
@@ -539,6 +564,36 @@
       "configFilePath": "./tsconfig.json"
     },
     "referencedMap": {
+      "./node_modules/@types/amqplib/callback_api.d.ts": [
+        "./node_modules/@types/amqplib/properties.d.ts",
+        "./node_modules/@types/node/events.d.ts",
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
+      "./node_modules/@types/amqplib/index.d.ts": [
+        "./node_modules/@types/amqplib/properties.d.ts",
+        "./node_modules/@types/bluebird/index.d.ts",
+        "./node_modules/@types/node/events.d.ts",
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/ts3.7/index.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
+      "./node_modules/@types/amqplib/properties.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
+      "./node_modules/@types/bluebird/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
       "./node_modules/@types/body-parser/index.d.ts": [
         "./node_modules/@types/connect/index.d.ts",
         "./node_modules/@types/node/fs.d.ts",
@@ -1062,7 +1117,16 @@
         "./node_modules/@types/node/ts3.2/fs.d.ts",
         "./node_modules/@types/node/ts3.2/util.d.ts",
         "./node_modules/@types/node/util.d.ts",
-        "./src/EventDetailsConnector.ts"
+        "./src/EventDetailsConnector.ts",
+        "./src/messaging.ts"
+      ],
+      "./src/messaging.ts": [
+        "./node_modules/@types/amqplib/callback_api.d.ts",
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/fs/promises.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
       ],
       "../../../../../usr/local/lib/node_modules/typescript/lib/lib.dom.d.ts": [
         "./node_modules/@types/node/fs.d.ts",
@@ -1288,6 +1352,36 @@
       ]
     },
     "exportedModulesMap": {
+      "./node_modules/@types/amqplib/callback_api.d.ts": [
+        "./node_modules/@types/amqplib/properties.d.ts",
+        "./node_modules/@types/node/events.d.ts",
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
+      "./node_modules/@types/amqplib/index.d.ts": [
+        "./node_modules/@types/amqplib/properties.d.ts",
+        "./node_modules/@types/bluebird/index.d.ts",
+        "./node_modules/@types/node/events.d.ts",
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/ts3.7/index.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
+      "./node_modules/@types/amqplib/properties.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
+      "./node_modules/@types/bluebird/index.d.ts": [
+        "./node_modules/@types/node/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/fs.d.ts",
+        "./node_modules/@types/node/ts3.2/util.d.ts",
+        "./node_modules/@types/node/util.d.ts"
+      ],
       "./node_modules/@types/body-parser/index.d.ts": [
         "./node_modules/@types/connect/index.d.ts",
         "./node_modules/@types/node/fs.d.ts",
@@ -1801,6 +1895,9 @@
       "./src/app.ts": [
         "./node_modules/@types/express-serve-static-core/index.d.ts"
       ],
+      "./src/messaging.ts": [
+        "./node_modules/@types/amqplib/callback_api.d.ts"
+      ],
       "../../../../../usr/local/lib/node_modules/typescript/lib/lib.dom.d.ts": [
         "./node_modules/@types/node/fs.d.ts",
         "./node_modules/@types/node/ts3.2/fs.d.ts",
@@ -2025,6 +2122,10 @@
       ]
     },
     "semanticDiagnosticsPerFile": [
+      "./node_modules/@types/amqplib/callback_api.d.ts",
+      "./node_modules/@types/amqplib/index.d.ts",
+      "./node_modules/@types/amqplib/properties.d.ts",
+      "./node_modules/@types/bluebird/index.d.ts",
       "./node_modules/@types/body-parser/index.d.ts",
       "./node_modules/@types/bson/index.d.ts",
       "./node_modules/@types/connect/index.d.ts",
@@ -2091,6 +2192,7 @@
       "./node_modules/@types/serve-static/index.d.ts",
       "./src/EventDetailsConnector.ts",
       "./src/app.ts",
+      "./src/messaging.ts",
       "../../../../../usr/local/lib/node_modules/typescript/lib/lib.dom.d.ts",
       "../../../../../usr/local/lib/node_modules/typescript/lib/lib.dom.iterable.d.ts",
       "../../../../../usr/local/lib/node_modules/typescript/lib/lib.es2015.collection.d.ts",

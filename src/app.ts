@@ -7,10 +7,14 @@ import * as fs from 'fs';
 import { RequestHandler } from "express";
 
 import { Database } from "./EventDetailsConnector";
+import { Messaging } from "./messaging";
 
+// The topic used for messages destined to microservices of this type.
+const EVENT_DETAILS_SERVICE_TOPIC: string = "events.details.*";
 
 let eventsDb: Database.EventDetailsConnector | null = null;
 let httpServer: Server;
+let messenger: Messaging.Messenger;
 
 /**
  * Handles errors raised by the given function (wrapped in a promise) which will handle it by passing it to the next
@@ -22,16 +26,7 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
     Promise.resolve(fn(req, res, next)).catch(next);
 });
 
-/**
- * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
- * the express app
- * @param eventsConnection the resolved database object
- */
-function databaseConnectionReady(eventsConnection: Database.EventDetailsConnector) {
-    console.log('database connection is ready');
-
-    eventsDb = eventsConnection;
-
+function setupServer() {
     httpServer = createServer(app);
 
     httpServer.on('error',
@@ -87,10 +82,32 @@ function databaseConnectionReady(eventsConnection: Database.EventDetailsConnecto
         }
     );
 
-    httpServer.listen(app);
+    return httpServer;
 }
 
-console.log('starting event micro dionysus');
+function req_received(msg: Buffer | null) {
+    console.log("Request received: " + msg);
+}
+
+/**
+ * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
+ * the express app
+ * @param eventsConnection the resolved database object
+ */
+async function databaseConnectionReady(eventsConnection: Database.EventDetailsConnector) {
+    console.log('database connection is ready');
+
+    eventsDb = eventsConnection;
+
+    messenger = await Messaging.Messenger.setup("rabbit-mq-config.json", req_received, [EVENT_DETAILS_SERVICE_TOPIC]);
+
+    httpServer = setupServer();
+    httpServer.listen(app);
+
+    console.log("Event micro dionysus started successfully");
+}
+
+console.log("Starting event micro dionysus...");
 
 export const app = express();
 
