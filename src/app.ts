@@ -25,7 +25,7 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
 });
 
 
-async function reqReceived(content: Buffer | null): Promise<Buffer | null> {
+async function reqReceived(content: Buffer | null): Promise<string | null> {
     // TODO: checks for message integrity.
     
     console.log("Request received: " + content);
@@ -44,7 +44,7 @@ async function reqReceived(content: Buffer | null): Promise<Buffer | null> {
 
     console.log("Response got");
 
-    return Buffer.from(JSON.stringify(data));
+    return JSON.stringify(data);
 }
 
 

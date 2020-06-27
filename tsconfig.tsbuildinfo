@@ -517,12 +517,12 @@
         "affectsGlobalScope": false
       },
       "./src/messaging.ts": {
-        "version": "fa20352952f8b5780100ab0122d44411391f7d3713d6a6ffa93cb78d9ef535b1",
-        "signature": "6d5ebdfed8712171a6ec367b8fce5802a39057ed978256449d727da437b09152",
+        "version": "04d0c9489ac38047953935c3a953301f3a2e3e63cbd2c0456e8093d7abe91d8d",
+        "signature": "43b63897ae888b187dd994c194cb1537ef658e5ccddec22ae051f9c1d59857bb",
         "affectsGlobalScope": false
       },
       "./src/app.ts": {
-        "version": "bbd89800a9517ad3954bc41b03579757a810af29205faed001cec2923f160536",
+        "version": "36ef9cd02a57ef210c6bcba3673c1da7969135bdfc173a107a9df0d36c18ffc8",
         "signature": "5ab0082578d32976c6616ce01e0b4d85859b6f6749be207b2548bb5516623999",
         "affectsGlobalScope": false
       },
