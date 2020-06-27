@@ -3,7 +3,7 @@ import cookieParser = require('cookie-parser');
 import logger = require('morgan');
 
 import * as fs from 'fs';
-import { RequestHandler, Application } from "express";
+import { RequestHandler} from "express";
 
 import { Database } from "./EventDetailsConnector";
 import { Messaging } from "./messaging";
@@ -23,67 +23,6 @@ let messenger: Messaging.Messenger;
 const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
 });
-
-// // Sets up the HTTP server which is used for debugging.
-// // Note that in production the http server should not be used as all communication is via RabbitMQ.
-// function setupServer() {
-//     httpServer = createServer(app);
-
-//     httpServer.on('error',
-//         /**
-//          * On error, handles listen errors from the http server (specifically EACCES and EADDRINUSE) and will rethrow
-//          * the error if not handled.
-//          * @param error the error provided by the http server
-//          */
-
-//          // FIXME, error: any is used temporarily to fix issues with error.syscall.
-//         (error: any) => {
-//             if (error.syscall !== 'listen') {
-//                 throw error;
-//             }
-
-//             let bind = typeof app.get('port') === 'string'
-//                 ? 'Pipe ' + app.get('port')
-//                 : 'Port ' + app.get('port');
-
-//             // handle specific listen errors with friendly messages
-//             switch (error.code) {
-//                 case 'EACCES':
-//                     console.error(bind + ' requires elevated privileges');
-//                     process.exit(1);
-//                     break;
-//                 case 'EADDRINUSE':
-//                     console.error(bind + ' is already in use');
-//                     process.exit(1);
-//                     break;
-//                 default:
-//                     throw error;
-//             }
-//         }
-//     );
-//     httpServer.on('listening',
-//         /**
-//          * On listening handler which will print out the port the server is listening on
-//          */
-//         () => {
-//             let addr = httpServer.address();
-
-//             let bind;
-
-//             if (addr === null) {
-//                 bind = 'null value';
-//             } else if (typeof (addr) === "string") {
-//                 bind = `pipe ${addr}`;
-//             } else {
-//                 bind = `port ${addr.port}`;
-//             }
-
-//             console.log(`Started event micro dionysus on :${bind}`);
-//         }
-//     );
-
-//     return httpServer;
-// }
 
 function req_received(msg: Buffer | null) {
     console.log("Request received: " + msg);
