@@ -2,7 +2,7 @@ import express = require('express');
 import cookieParser = require('cookie-parser');
 import logger = require('morgan');
 
-import { createServer } from 'http';
+import { createServer, Server } from 'http';
 import * as fs from 'fs';
 import { RequestHandler } from "express";
 
@@ -10,7 +10,7 @@ import { Database } from "./EventDetailsConnector";
 
 
 let eventsDb: Database.EventDetailsConnector | null = null;
-let httpServer;
+let httpServer: Server;
 
 /**
  * Handles errors raised by the given function (wrapped in a promise) which will handle it by passing it to the next
@@ -40,7 +40,9 @@ function databaseConnectionReady(eventsConnection: Database.EventDetailsConnecto
          * the error if not handled.
          * @param error the error provided by the http server
          */
-        (error) => {
+
+         // FIXME, error: any is used temporarily to fix issues with error.syscall.
+        (error: any) => {
             if (error.syscall !== 'listen') {
                 throw error;
             }
