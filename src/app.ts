@@ -2,6 +2,7 @@ import express = require('express');
 import cookieParser = require('cookie-parser');
 import logger = require('morgan');
 
+import { createServer } from 'http';
 import * as fs from 'fs';
 import { RequestHandler } from "express";
 
@@ -9,6 +10,7 @@ import { Database } from "./EventDetailsConnector";
 
 
 let eventsDb: Database.EventDetailsConnector | null = null;
+let httpServer;
 
 /**
  * Handles errors raised by the given function (wrapped in a promise) which will handle it by passing it to the next
@@ -29,14 +31,69 @@ function databaseConnectionReady(eventsConnection: Database.EventDetailsConnecto
     console.log('database connection is ready');
 
     eventsDb = eventsConnection;
-    app.listen(app.get('port'));
 
-    console.log('started event micro dionysus');
+    httpServer = createServer(app);
+
+    httpServer.on('error',
+        /**
+         * On error, handles listen errors from the http server (specifically EACCES and EADDRINUSE) and will rethrow
+         * the error if not handled.
+         * @param error the error provided by the http server
+         */
+        (error) => {
+            if (error.syscall !== 'listen') {
+                throw error;
+            }
+
+            let bind = typeof app.get('port') === 'string'
+                ? 'Pipe ' + app.get('port')
+                : 'Port ' + app.get('port');
+
+            // handle specific listen errors with friendly messages
+            switch (error.code) {
+                case 'EACCES':
+                    console.error(bind + ' requires elevated privileges');
+                    process.exit(1);
+                    break;
+                case 'EADDRINUSE':
+                    console.error(bind + ' is already in use');
+                    process.exit(1);
+                    break;
+                default:
+                    throw error;
+            }
+        }
+    );
+    httpServer.on('listening',
+        /**
+         * On listening handler which will print out the port the server is listening on
+         */
+        () => {
+            let addr = httpServer.address();
+
+            let bind;
+
+            if (addr === null) {
+                bind = 'null value';
+            } else if (typeof (addr) === "string") {
+                bind = `pipe ${addr}`;
+            } else {
+                bind = `port ${addr.port}`;
+            }
+
+            console.log(`started event micro dionysus on :${bind}`);
+        }
+    );
+
+    httpServer.listen(app);
 }
 
 console.log('starting event micro dionysus');
 
 export const app = express();
+
+app.set('port', process.env.PORT || 15550);
+
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({
@@ -44,6 +101,7 @@ app.use(express.urlencoded({
 }));
 app.use(cookieParser());
 
+// Setup some listeners
 app.get('/test_get_events', asyncErrorCatcher(async (req, res, next) => {
     if (eventsDb === null) {
         console.error('failed to get events because database was null');
