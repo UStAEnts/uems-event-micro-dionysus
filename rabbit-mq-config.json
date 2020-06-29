@@ -1,0 +1,3 @@
+{
+    "uri": "amqp://dionysus:attackchairaccess@rabbit-uems:5672/"
+}
