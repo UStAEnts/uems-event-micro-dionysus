@@ -1,16 +1,26 @@
 import * as MongoClient from 'mongodb';
 
 // The collection within the event database which contains the event details.
-const EVENT_DETAILS_COLLECTION = "details"
+const EVENT_DETAILS_COLLECTION = 'details';
 
 // The database used for storing events.
-const EVENT_DB = "events"
+const EVENT_DB = 'events';
 
 export namespace Database {
 
+    export class EventDetailsConnector {
+        constructor(private db: MongoClient.Db) {
+        }
+
+        retrieveAllEvents(): Promise<any> {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            return collection.find({}).toArray();
+        }
+    }
+
     export async function connect(uri: string): Promise<EventDetailsConnector> {
         try {
-            let client = await MongoClient.connect(uri, {
+            const client = await MongoClient.connect(uri, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
             });
