@@ -24,12 +24,36 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
     Promise.resolve(fn(req, res, next)).catch(next);
 });
 
+// TODO, remove :any usage.
+function generate_query(content: any): any {
+    let query = {};
 
-async function reqReceived(content: JSON): Promise<string | null> {
-    // TODO: checks for message integrity.
+    // There is probably a better way to do this - maybe a content.map(|v| if (v.isEmpty()){remove(v)}) type thing. 
+    if (content.name != '') {
+        Object.assign(query, {name: content.name});
+    }
+
+    if (content.start_date_before != '') {
+        Object.assign(query, {start_date_before: content.start_date_before});
+    }
+
+    if (content.start_date_after != '') {
+        Object.assign(query, {start_date_after: content.start_date_after});
+    }
+
+    if (content.end_date_before != '') {
+        Object.assign(query, {end_date_before: content.end_date_before});
+    }
     
-    console.log("Request received: " + content);
-    console.log("Handling request...");
+    if (content.end_date_after != '') {
+        Object.assign(query, {end_date_after: content.end_date_after});
+    }
+
+    return query;
+}
+
+async function reqReceived(content: any): Promise<string | null> {
+    // TODO: checks for message integrity.
 
     if (content == null || eventsDb == null) {
         // Blank (null content) messages are ignored.
@@ -39,11 +63,9 @@ async function reqReceived(content: JSON): Promise<string | null> {
         return null;
     }
 
-    console.log("Message content");
+    let query = generate_query(content);
 
-    const data = await eventsDb.retrieveQuery(content);
-
-    console.log("Response got");
+    const data = await eventsDb.retrieveQuery(query);
 
     return JSON.stringify(data);
 }
