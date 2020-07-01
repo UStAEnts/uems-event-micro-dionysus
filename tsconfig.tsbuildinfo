@@ -452,8 +452,8 @@
         "affectsGlobalScope": false
       },
       "./src/EventDetailsConnector.ts": {
-        "version": "3e1913940da163f0c869cf433115c0323f3329cf5296ce428356b7e31e5dab8f",
-        "signature": "7136133803640ab4a1efbd0ad9ec223d5396cf2f06d1c129ee9556177498f177",
+        "version": "69375e711bd35f0fac03bcf92b9b37fee6c285c766d3b48802afa4edbfd7d466",
+        "signature": "517bc488ed948ad64c35b9f31dc785bc6252c500eb278760e4e0c88f4e85d036",
         "affectsGlobalScope": false
       },
       "./node_modules/@types/range-parser/index.d.ts": {
@@ -517,12 +517,12 @@
         "affectsGlobalScope": false
       },
       "./src/messaging.ts": {
-        "version": "04d0c9489ac38047953935c3a953301f3a2e3e63cbd2c0456e8093d7abe91d8d",
-        "signature": "43b63897ae888b187dd994c194cb1537ef658e5ccddec22ae051f9c1d59857bb",
+        "version": "6ebd07586b18c820974f0118d0632d9f399a6dde15b2f5986f872950c959b3da",
+        "signature": "8e4901f917e467b5f5f303fc28442d9354bc8b4ebecd2741b1b5ee2c2e958baa",
         "affectsGlobalScope": false
       },
       "./src/app.ts": {
-        "version": "36ef9cd02a57ef210c6bcba3673c1da7969135bdfc173a107a9df0d36c18ffc8",
+        "version": "4acd1574c115594b5a66b071ee6d2c70970bf6fc51a8ace8022c32656bf970c8",
         "signature": "5ab0082578d32976c6616ce01e0b4d85859b6f6749be207b2548bb5516623999",
         "affectsGlobalScope": false
       },

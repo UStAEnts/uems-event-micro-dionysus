@@ -32,6 +32,11 @@ export namespace Database {
             return collection.find({}).toArray();
         }
 
+        retrieveQuery(query: {}): Promise<any> {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            return collection.find(query).toArray();
+        }
+
     }
 
 }

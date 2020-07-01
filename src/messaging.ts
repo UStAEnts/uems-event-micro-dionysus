@@ -54,7 +54,7 @@ export namespace Messaging {
         // Retuns a setup Messager.
         // The given callback is assigned as the callback for receiving a request to this service.
         // If the callback resolves to null then no response is sent.
-        static async configureConnection(conn: Connection, req_recv_callback: (content: Buffer | null) => Promise<string | null>, topics: [string]) {
+        static async configureConnection(conn: Connection, req_recv_callback: (content: JSON) => Promise<string | null>, topics: [string]) {
             conn.on("error", function(err: Error) {
                 if (err.message !== "Connection closing") {
                     console.error("[AMQP] conn error", err.message);
@@ -120,7 +120,7 @@ export namespace Messaging {
         // Creates a new Messager to be used by the microservice for communication including receiving requests and sending responses.
         // Uses the config at the given path to configure the connection to rabbitMQ.
         // The given req_recv_callback is called if a message is received with the argument being the message content as an object.
-        static setup(configPath: string, req_recv_callback: (content: Buffer | null) => Promise<string | null>, topics: [string]) {
+        static setup(configPath: string, req_recv_callback: (content: JSON) => Promise<string | null>, topics: [string]) {
             return new Promise<Messenger>(async function (resolve, reject) {
                 console.log('Connecting to rabbitmq...');
                 const data = await fs.readFile(configPath);

@@ -25,7 +25,7 @@ const asyncErrorCatcher = (fn: RequestHandler): RequestHandler => ((req, res, ne
 });
 
 
-async function reqReceived(content: Buffer | null): Promise<string | null> {
+async function reqReceived(content: JSON): Promise<string | null> {
     // TODO: checks for message integrity.
     
     console.log("Request received: " + content);
@@ -38,9 +38,10 @@ async function reqReceived(content: Buffer | null): Promise<string | null> {
         console.log("Message content null or DB not ready!, message dropped");
         return null;
     }
-    
-    // Currently all events are returned, TODO query processing.
-    const data = await eventsDb.retrieveAllEvents();
+
+    console.log("Message content");
+
+    const data = await eventsDb.retrieveQuery(content);
 
     console.log("Response got");
 
