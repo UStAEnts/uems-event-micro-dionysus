@@ -8,16 +8,6 @@ const EVENT_DB = 'events';
 
 export namespace Database {
 
-    export class EventDetailsConnector {
-        constructor(private db: MongoClient.Db) {
-        }
-
-        retrieveAllEvents(): Promise<any> {
-            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            return collection.find({}).toArray();
-        }
-    }
-
     export async function connect(uri: string): Promise<EventDetailsConnector> {
         try {
             const client = await MongoClient.connect(uri, {
@@ -30,6 +20,23 @@ export namespace Database {
             console.log('failed to connect to the database', e);
             throw e;
         }
+    }
+
+    export class EventDetailsConnector {
+
+        constructor(private db: MongoClient.Db) {
+        }
+
+        retrieveAllEvents(): Promise<any[]> {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            return collection.find({}).toArray();
+        }
+
+        retrieveQuery(query: {}): Promise<any[]> {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            return collection.find(query).toArray();
+        }
+
     }
 
 }

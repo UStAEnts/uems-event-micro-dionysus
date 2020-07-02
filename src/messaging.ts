@@ -57,7 +57,7 @@ export namespace Messaging {
         // If the callback resolves to null then no response is sent.
         static async configureConnection(
             conn: Connection,
-            reqRecvCallback: (content: Buffer | null) => Promise<string | null>,
+            reqRecvCallback: (content: any) => Promise<string | null>,
             topics: [string],
         ) {
             conn.on('error', (err: Error) => {
@@ -129,7 +129,7 @@ export namespace Messaging {
         // object.
         static setup(
             configPath: string,
-            reqRecvCallback: (content: Buffer | null) => Promise<string | null>,
+            reqRecvCallback: (content: any) => Promise<string | null>,
             topics: [string],
         ) {
             return new Promise<Messenger>((resolve, reject) => {
