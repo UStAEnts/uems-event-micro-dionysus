@@ -36,6 +36,17 @@ export namespace Database {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             return collection.insertOne(content);
         }
+
+        findAndModifyEvent(event_id: number, new_event: any): Promise<any> {
+            // TODO, setup the database so changes are timestamped in a reversable way. 
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            return collection.replaceOne(
+                {
+                    _id: new MongoClient.ObjectID(event_id),
+                }, 
+                new_event
+                );
+        }
     }
 
 }

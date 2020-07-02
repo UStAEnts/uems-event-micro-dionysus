@@ -57,7 +57,7 @@ async function handleUnsupportedOp(content: any): Promise<string | null> {
 }
 
 
-// Extracts the event out of an event add message. 
+// Extracts the event out of an event message. 
 function extractEvent(content: any) {
     if (content.name == undefined || content.start_date == undefined || 
         content.end_date == undefined || content.venue == undefined) {
@@ -97,6 +97,27 @@ async function handleQueryReq(db: Database.EventDetailsConnector, content: any):
     return JSON.stringify(data);
 }
 
+async function handleModifyReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+    // TODO find and update only part of the event.
+    // TODO, treating events as immutable with version controlled/timestamped modifications.
+    // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
+    //          have an inconsistent view of teh event.
+
+    if (content.event_id == undefined) {
+        // TODO, real verification.
+        return null;
+    }
+
+    const new_event = extractEvent(content);
+    const event_id = content.event_id;
+
+    const result = await db.findAndModifyEvent(event_id, new_event);
+
+    // TODO, processing response result beyond just returning the result.
+
+    return JSON.stringify(result);
+}
+
 async function reqReceived(content: any): Promise<string | null> {
     // TODO: checks for message integrity.
 
@@ -113,6 +134,8 @@ async function reqReceived(content: any): Promise<string | null> {
             return handleQueryReq(eventsDb, content);
         case 'add':
             return handleAddReq(eventsDb, content);
+        case 'modify':
+            return handleModifyReq(eventsDb, content);
         default:
             return handleUnsupportedOp(content);
     }
