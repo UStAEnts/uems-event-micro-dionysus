@@ -50,6 +50,25 @@ function generate_query(content: any): any {
     return query;
 }
 
+async function handleUnsupportedOp(content: any): Promise<string | null> {
+    return null;
+}
+
+async function handleAddReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+    // TODO, actual handling.
+    // TODO, checking venue exists.
+    // TODO, verification that the event doesn't already exist, that the event is valid.
+    return JSON.stringify({event_id: 1});
+}
+
+async function handleQueryReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+    let query = generate_query(content);
+
+    const data = await db.retrieveQuery(query);
+
+    return JSON.stringify(data);
+}
+
 async function reqReceived(content: any): Promise<string | null> {
     // TODO: checks for message integrity.
 
@@ -61,11 +80,14 @@ async function reqReceived(content: any): Promise<string | null> {
         return null;
     }
 
-    let query = generate_query(content);
-
-    const data = await eventsDb.retrieveQuery(query);
-
-    return JSON.stringify(data);
+    switch (content.type) {
+        case 'query':
+            return handleQueryReq(eventsDb, content);
+        case 'add':
+            return handleAddReq(eventsDb, content);
+        default:
+            return handleUnsupportedOp(content);
+    }
 }
 
 console.log('Starting event micro dionysus...');
