@@ -94,6 +94,8 @@ async function handleQueryReq(db: Database.EventDetailsConnector, content: any):
 
     const data = await db.retrieveQuery(query);
 
+    
+
     return JSON.stringify(data);
 }
 
@@ -109,6 +111,9 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
     }
 
     const new_event = extractEvent(content);
+
+    console.log("New event start date: " + new_event?.start_date);
+
     const event_id = content.event_id;
 
     const result = await db.findAndModifyEvent(event_id, new_event);
