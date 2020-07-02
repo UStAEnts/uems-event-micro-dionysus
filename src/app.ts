@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 
+import * as MongoClient from 'mongodb';
+
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
 
@@ -54,15 +56,41 @@ async function handleUnsupportedOp(content: any): Promise<string | null> {
     return null;
 }
 
+
+// Extracts the event out of an event add message. 
+function extractEvent(content: any) {
+    if (content.name == undefined || content.start_date == undefined || 
+        content.end_date == undefined || content.venue == undefined) {
+        // TODO, verification that the event doesn't already exist, that the event is valid.
+        // This is far from real 'verification'.
+        // TODO, checking venue exists.
+        console.error("Event to insert missing required parts - dropped");
+        console.log(content);
+        return null;
+    }
+
+    return {
+        name: content.name,
+        // Date timestamp is set in milliseconds but communicated in seconds.
+        start_date: new Date(parseFloat(content.start_date) * 1000), 
+        end_date: new Date(parseFloat(content.end_date) * 1000),
+        venue: content.venue
+    };
+}
+
 async function handleAddReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
-    // TODO, actual handling.
-    // TODO, checking venue exists.
-    // TODO, verification that the event doesn't already exist, that the event is valid.
-    return JSON.stringify({event_id: 1});
+    const event = extractEvent(content);
+
+    // TODO, proper event rejection.
+    if (event == null) { return null; }
+
+    const result = await db.insertEvent(event);
+
+    return JSON.stringify(result);
 }
 
 async function handleQueryReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
-    let query = generate_query(content);
+    const query = generate_query(content);
 
     const data = await db.retrieveQuery(query);
 
@@ -102,21 +130,6 @@ app.use(express.urlencoded({
     extended: false,
 }));
 app.use(cookieParser());
-
-// Setup some listeners
-app.get('/test_get_events', asyncErrorCatcher(async (req, res) => {
-    if (eventsDb === null) {
-        console.error('failed to get events because database was null');
-        throw new Error('eventsDB was null');
-    }
-
-    eventsDb.retrieveAllEvents().then((data) => {
-        console.log(data);
-        res.json(data);
-    });
-}));
-
-app.post('/', (req, res) => res.send('Test Path, Post Req Received'));
 
 /**
  * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
