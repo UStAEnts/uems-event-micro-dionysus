@@ -27,12 +27,12 @@ export namespace Database {
         constructor(private db: MongoClient.Db) {
         }
 
-        retrieveAllEvents(): Promise<any> {
+        retrieveAllEvents(): Promise<any[]> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             return collection.find({}).toArray();
         }
 
-        retrieveQuery(query: {}): Promise<any> {
+        retrieveQuery(query: {}): Promise<any[]> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             return collection.find(query).toArray();
         }
