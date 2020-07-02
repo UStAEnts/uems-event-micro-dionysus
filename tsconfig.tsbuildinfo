@@ -452,7 +452,7 @@
         "affectsGlobalScope": false
       },
       "./src/EventDetailsConnector.ts": {
-        "version": "db7926ca2a9ebfd8492d36550cdc0c090f8afb2f8a0ccc2c491ffe168e616e31",
+        "version": "73c314dbb28d3605e4d563fe59044fe7861ff8677cf2494b70298d1e8d3d2c60",
         "signature": "41b9aa43da800a5d6e055d55da04bdfa6676b7bb994ff113cb2bc431dd2068de",
         "affectsGlobalScope": false
       },
@@ -496,16 +496,6 @@
         "signature": "ead1ed9dd4874f4907a506a31e4fe9c4e079b42816f6b7ea5016a6d5ddf2fde3",
         "affectsGlobalScope": false
       },
-      "./node_modules/@types/cookie-parser/index.d.ts": {
-        "version": "8d77ed4e39114c32edc2e35b683b6f54a6b3292ecdf392e4bfc5f726734955d8",
-        "signature": "8d77ed4e39114c32edc2e35b683b6f54a6b3292ecdf392e4bfc5f726734955d8",
-        "affectsGlobalScope": false
-      },
-      "./node_modules/@types/morgan/index.d.ts": {
-        "version": "b60af9a543b4d5b123f9162105b9b160858c5074eee087aa6cacb9837e76b563",
-        "signature": "b60af9a543b4d5b123f9162105b9b160858c5074eee087aa6cacb9837e76b563",
-        "affectsGlobalScope": false
-      },
       "./node_modules/@types/amqplib/properties.d.ts": {
         "version": "f5fd92915a5b9ca9ce6ed0a526aa4038896eb32599e4ae640c74170150a140bf",
         "signature": "f5fd92915a5b9ca9ce6ed0a526aa4038896eb32599e4ae640c74170150a140bf",
@@ -517,12 +507,22 @@
         "affectsGlobalScope": false
       },
       "./src/messaging.ts": {
-        "version": "6ebd07586b18c820974f0118d0632d9f399a6dde15b2f5986f872950c959b3da",
-        "signature": "8e4901f917e467b5f5f303fc28442d9354bc8b4ebecd2741b1b5ee2c2e958baa",
+        "version": "630fad7270a4731a2d214557f5f2bf22bee7f3ca9a70bd795a973cc6b9998bf2",
+        "signature": "38215e7626e88903633dec81dd12d44d478fef74c6b96f9e0d17a15a59533ecf",
+        "affectsGlobalScope": false
+      },
+      "./node_modules/@types/morgan/index.d.ts": {
+        "version": "b60af9a543b4d5b123f9162105b9b160858c5074eee087aa6cacb9837e76b563",
+        "signature": "b60af9a543b4d5b123f9162105b9b160858c5074eee087aa6cacb9837e76b563",
+        "affectsGlobalScope": false
+      },
+      "./node_modules/@types/cookie-parser/index.d.ts": {
+        "version": "8d77ed4e39114c32edc2e35b683b6f54a6b3292ecdf392e4bfc5f726734955d8",
+        "signature": "8d77ed4e39114c32edc2e35b683b6f54a6b3292ecdf392e4bfc5f726734955d8",
         "affectsGlobalScope": false
       },
       "./src/app.ts": {
-        "version": "49ccd26d2edbf6a04e2aaab879ccb2b4d6730005b60a39bd8351722e51d2228f",
+        "version": "a807ed1cfa0e7556e1395dafe79fa51238efbbc9f82fd309da327858d9b17dea",
         "signature": "5ab0082578d32976c6616ce01e0b4d85859b6f6749be207b2548bb5516623999",
         "affectsGlobalScope": false
       },
