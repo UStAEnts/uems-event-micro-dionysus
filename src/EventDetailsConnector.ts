@@ -48,6 +48,16 @@ export namespace Database {
                 new_event
                 );
         }
+
+        removeEvent(event_id: number): Promise<any> {
+            // TODO, setup the database so changes are timestamped in a reversable way. 
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            return collection.deleteOne(
+                {
+                    _id: new MongoClient.ObjectID(event_id),
+                }
+            );
+        }
     }
 
 }

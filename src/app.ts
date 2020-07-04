@@ -94,8 +94,6 @@ async function handleQueryReq(db: Database.EventDetailsConnector, content: any):
 
     const data = await db.retrieveQuery(query);
 
-    
-
     return JSON.stringify(data);
 }
 
@@ -103,7 +101,7 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
     // TODO find and update only part of the event.
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
-    //          have an inconsistent view of teh event.
+    //          have an inconsistent view of the event.
 
     if (content.event_id == undefined) {
         // TODO, real verification.
@@ -114,9 +112,24 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
 
     console.log("New event start date: " + new_event?.start_date);
 
-    const event_id = content.event_id;
+    const result = await db.findAndModifyEvent(content.event_id, new_event);
 
-    const result = await db.findAndModifyEvent(event_id, new_event);
+    // TODO, processing response result beyond just returning the result.
+
+    return JSON.stringify(result);
+}
+
+async function handleDeleteReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+    // TODO, treating events as immutable with version controlled/timestamped modifications.
+    // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
+    //          have an inconsistent view of the event.
+    
+    if (content.event_id == undefined) {
+        // TODO, real verification.
+        return null;
+    }
+
+    const result = await db.removeEvent(content.event_id);
 
     // TODO, processing response result beyond just returning the result.
 
@@ -141,6 +154,8 @@ async function reqReceived(content: any): Promise<string | null> {
             return handleAddReq(eventsDb, content);
         case 'modify':
             return handleModifyReq(eventsDb, content);
+        case 'delete':
+            return handleDeleteReq(eventsDb, content);
         default:
             return handleUnsupportedOp(content);
     }
