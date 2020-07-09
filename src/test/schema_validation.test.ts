@@ -25,6 +25,17 @@ const VALID_CREATE_MSG = {
     "attendance": 140
 };
 
+const INVALID_CREATE_MISSING_ATTENDANCE_MSG = {
+	"msg_id": "1",
+    "status": 200,
+    "msg_intention": "CREATE",
+    "event_id": "evId",
+    "event_name": "evName",
+    "event_start_date": 100000,
+    "event_end_date": 100002,
+    "venue_ids": ["1", "2"]
+};
+
 let schema: object;
 
 before(async() => {
@@ -33,8 +44,11 @@ before(async() => {
 
 describe('Valid Schema Test', () => {
     it('Should process the message as expected', () => {
-        console.log(schema);
         let validator = new Messaging.MessageValidator(schema);
         assert(validator.validate(VALID_CREATE_MSG));
-   });
+    });
+    it('Should reject message as attendance missing', () => {
+        let validator = new Messaging.MessageValidator(schema);
+        assert(!validator.validate(INVALID_CREATE_MISSING_ATTENDANCE_MSG));
+    });
 });
