@@ -48,6 +48,13 @@ const INVALID_STATUS_WRONG_TYPE_MSG = {
     "attendance": 140
 };
 
+
+const VALID_MINIMAL_GET_MSG = {
+	"msg_id": "1",
+    "status": "hello",
+    "msg_intention": "GET"
+};
+
 let schema: object;
 
 before(async() => {
@@ -62,6 +69,10 @@ describe('Valid Schema Test', () => {
     it('Should reject message as attendance missing', () => {
         let validator = new Messaging.MessageValidator(schema);
         assert(!validator.validate(INVALID_CREATE_MISSING_ATTENDANCE_MSG));
+    });
+    it('Should accept message as this is the minimum valid get message (get all)', () => {
+        let validator = new Messaging.MessageValidator(schema);
+        assert(validator.validate(VALID_MINIMAL_GET_MSG));
     });
     // it('Should reject message as status is not a number', () => {
     //     let validator = new Messaging.MessageValidator(schema);
