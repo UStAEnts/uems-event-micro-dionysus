@@ -151,7 +151,7 @@ export namespace Messaging {
                 return;
             }
 
-            Messaging.Messenger.sendResponse(contentJson, res, this.send_ch);
+            return Messaging.Messenger.sendResponse(contentJson, res, this.send_ch);
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
@@ -223,7 +223,10 @@ export namespace Messaging {
 
                             let messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator, msg_callback);
 
-                            rcvCh.consume(queue.queue, messenger.handleMsg, { noAck: true });
+                            rcvCh.consume(queue.queue, async(msg) => {
+
+                                await messenger.handleMsg(msg)   
+                            }, { noAck: true });
 
                             resolve(messenger);
                         });
@@ -238,12 +241,13 @@ export namespace Messaging {
         // object.
         static setup(
             configPath: string,
-            reqRecvCallback: (content: any) => Promise<string | null>,
+            reqRecvCallback: Function,
             topics: [string],
             schemaPath: string
         ) {
             return new Promise<Messenger>(async (resolve, reject) => {
                 let schema = JSON.parse((await fs.readFile(schemaPath)).toString());
+                let msg_validator = new MessageValidator(schema);
                 console.log('Connecting to rabbitmq...');
                 fs.readFile(configPath).then((data: Buffer) => {
                     const configJson: MqConfig = JSON.parse(data.toString());
@@ -253,7 +257,7 @@ export namespace Messaging {
                             reject(err);
                             return;
                         }
-                        resolve(await Messenger.configureConnection(conn, reqRecvCallback, topics, schema));
+                        resolve(await Messenger.configureConnection(conn, reqRecvCallback, topics, msg_validator));
                     });
                 });
             });
