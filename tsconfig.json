@@ -1,6 +1,7 @@
 {
   "include": [
     "./.eslintrc.js",
+    "src/test",
     "src"
   ],
   "compilerOptions": {
