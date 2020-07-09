@@ -36,6 +36,18 @@ const INVALID_CREATE_MISSING_ATTENDANCE_MSG = {
     "venue_ids": ["1", "2"]
 };
 
+const INVALID_STATUS_WRONG_TYPE_MSG = {
+	"msg_id": "1",
+    "status": "hello",
+    "msg_intention": "CREATE",
+    "event_id": "evId",
+    "event_name": "evName",
+    "event_start_date": 100000,
+    "event_end_date": 100002,
+    "venue_ids": ["1", "2"],
+    "attendance": 140
+};
+
 let schema: object;
 
 before(async() => {
@@ -51,4 +63,8 @@ describe('Valid Schema Test', () => {
         let validator = new Messaging.MessageValidator(schema);
         assert(!validator.validate(INVALID_CREATE_MISSING_ATTENDANCE_MSG));
     });
+    // it('Should reject message as status is not a number', () => {
+    //     let validator = new Messaging.MessageValidator(schema);
+    //     assert(!validator.validate(INVALID_STATUS_WRONG_TYPE_MSG));
+    // });
 });
