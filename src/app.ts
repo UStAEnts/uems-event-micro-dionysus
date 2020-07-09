@@ -12,7 +12,7 @@ import * as MongoClient from 'mongodb';
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
 
 // A path to the .json file which describes valid message schema.
-const MESSAGE_SCHEMA_PATH: string = '../schema/event_schema.json';
+const MESSAGE_SCHEMA_PATH: string = 'schema/event_schema.json';
 
 // The path to the rabbitMQ config which is used to connect to the messaging system.
 const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';

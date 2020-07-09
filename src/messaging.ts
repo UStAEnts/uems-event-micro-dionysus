@@ -105,8 +105,8 @@ export namespace Messaging {
             this.schema_validator = ajv.compile(schema);
         }
 
-        validate(msg: any) {
-            return this.schema_validator(msg);
+        public async validate(msg: any): Promise<boolean> {
+            return await this.schema_validator(msg);
         }
     }
 
@@ -195,6 +195,8 @@ export namespace Messaging {
                                 rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
                             });
 
+                            let messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator);
+
                             rcvCh.consume(queue.queue,
                                 async (msg) => {
                                     if (msg == null) {
@@ -203,7 +205,7 @@ export namespace Messaging {
 
                                     const contentJson = JSON.parse(msg.content.toString());
 
-                                    if (!msg_validator.validate(contentJson)) {
+                                    if (!await messenger.msg_validator.validate(contentJson)) {
                                         // Messages not compliant with the schema are dropped.
                                         console.log("Message Dropped: Not Schema Compliant");
                                         return; 
@@ -219,7 +221,7 @@ export namespace Messaging {
                                     Messaging.Messenger.sendResponse(contentJson, res, sendCh);
                                 }, { noAck: true });
 
-                            resolve(new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator));
+                            resolve(messenger);
                         });
                     });
                 });
@@ -236,20 +238,18 @@ export namespace Messaging {
             topics: [string],
             schemaPath: string
         ) {
-            return new Promise<Messenger>((resolve, reject) => {
-                fs.readFile(schemaPath).then((schemaRaw: Buffer) => {
-                    let schema = new MessageValidator(schemaRaw.toJSON());
-                    console.log('Connecting to rabbitmq...');
-                    fs.readFile(configPath).then((data: Buffer) => {
-                        const configJson: MqConfig = JSON.parse(data.toString());
-                        amqpConnect(`${configJson.uri}?heartbeat=60`, async (err: Error, conn: Connection) => {
-                            if (err) {
-                                console.error('[AMQP]', err.message);
-                                reject(err);
-                                return;
-                            }
-                            resolve(await Messenger.configureConnection(conn, reqRecvCallback, topics, schema));
-                        });
+            return new Promise<Messenger>(async (resolve, reject) => {
+                let schema = JSON.parse((await fs.readFile(schemaPath)).toString());
+                console.log('Connecting to rabbitmq...');
+                fs.readFile(configPath).then((data: Buffer) => {
+                    const configJson: MqConfig = JSON.parse(data.toString());
+                    amqpConnect(`${configJson.uri}?heartbeat=60`, async (err: Error, conn: Connection) => {
+                        if (err) {
+                            console.error('[AMQP]', err.message);
+                            reject(err);
+                            return;
+                        }
+                        resolve(await Messenger.configureConnection(conn, reqRecvCallback, topics, schema));
                     });
                 });
             });
