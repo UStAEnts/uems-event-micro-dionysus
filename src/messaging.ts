@@ -1,4 +1,4 @@
-import { Channel, connect as amqpConnect, Connection } from 'amqplib/callback_api';
+import { Channel, connect as amqpConnect, Connection, Message } from 'amqplib/callback_api';
 import Ajv from 'ajv';
 import { Logger } from 'mongodb';
 
@@ -121,11 +121,37 @@ export namespace Messaging {
 
         msg_validator: MessageValidator;
 
-        private constructor(conn: Connection, sendCh: Channel, rcvCh: Channel, msg_validator: MessageValidator) {
+        msg_callback: Function;
+
+        private constructor(conn: Connection, sendCh: Channel, rcvCh: Channel, msg_validator: MessageValidator, msg_callback: Function) {
             this.conn = conn;
             this.send_ch = sendCh;
             this.rcv_ch = rcvCh;
             this.msg_validator = msg_validator;
+            this.msg_callback = msg_callback;
+        }
+
+        async handleMsg(msg: Message | null): Promise<any> {
+            if (msg == null) {
+                return;
+            }
+
+            const contentJson = JSON.parse(msg.content.toString());
+
+            if (!await this.msg_validator.validate(contentJson)) {
+                // Messages not compliant with the schema are dropped.
+                console.log("Message Dropped: Not Schema Compliant");
+                return; 
+            }
+
+            const res: string | null = await this.msg_callback(contentJson);
+
+            if (res == null) {
+                // A null response indicates no response.
+                return;
+            }
+
+            Messaging.Messenger.sendResponse(contentJson, res, this.send_ch);
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
@@ -153,7 +179,7 @@ export namespace Messaging {
         // If the callback resolves to null then no response is sent.
         static async configureConnection(
             conn: Connection,
-            reqRecvCallback: (content: any) => Promise<string | null>,
+            msg_callback: Function,
             topics: [string],
             msg_validator: MessageValidator
         ) {
@@ -195,31 +221,9 @@ export namespace Messaging {
                                 rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
                             });
 
-                            let messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator);
+                            let messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator, msg_callback);
 
-                            rcvCh.consume(queue.queue,
-                                async (msg) => {
-                                    if (msg == null) {
-                                        return;
-                                    }
-
-                                    const contentJson = JSON.parse(msg.content.toString());
-
-                                    if (!await messenger.msg_validator.validate(contentJson)) {
-                                        // Messages not compliant with the schema are dropped.
-                                        console.log("Message Dropped: Not Schema Compliant");
-                                        return; 
-                                    }
-
-                                    const res: string | null = await reqRecvCallback(contentJson);
-
-                                    if (res == null) {
-                                        // A null response indicates no response.
-                                        return;
-                                    }
-
-                                    Messaging.Messenger.sendResponse(contentJson, res, sendCh);
-                                }, { noAck: true });
+                            rcvCh.consume(queue.queue, messenger.handleMsg, { noAck: true });
 
                             resolve(messenger);
                         });
