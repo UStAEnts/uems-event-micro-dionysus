@@ -11,6 +11,12 @@ import * as MongoClient from 'mongodb';
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
 
+// A path to the .json file which describes valid message schema.
+const MESSAGE_SCHEMA_PATH: string = '../schema/event_schema.json';
+
+// The path to the rabbitMQ config which is used to connect to the messaging system.
+const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
+
 let eventsDb: Database.EventDetailsConnector | null = null;
 let messenger: Messaging.Messenger;
 
@@ -191,9 +197,10 @@ async function databaseConnectionReady(eventsConnection: Database.EventDetailsCo
             // @typescript-eslint/no-unused-vars: kept to retain code, TODO: is usage required?
             // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-await-in-loop
             messenger = await Messaging.Messenger.setup(
-                'rabbit-mq-config.json',
+                RABBIT_MQ_CONFIG_PATH,
                 reqReceived,
                 [EVENT_DETAILS_SERVICE_TOPIC],
+                MESSAGE_SCHEMA_PATH
             );
             break;
         } catch (err) {

@@ -4,7 +4,7 @@
     "type": "object",
     "required": ["msg_id", "status", "msg_intention"],
     "anyOf": [
-        {"required": ["event_name", "event_start_date", "event_end_date", "venue_ids", "attendance"]},
+        {"required": ["event_name", "event_start_date", "event_end_date", "venue_ids", "attendance"]}
     ],
     "properties": {
         "items": {

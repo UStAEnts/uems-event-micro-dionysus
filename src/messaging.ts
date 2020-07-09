@@ -1,5 +1,6 @@
 import { Channel, connect as amqpConnect, Connection } from 'amqplib/callback_api';
 import Ajv from 'ajv';
+import { Logger } from 'mongodb';
 
 const fs = require('fs').promises;
 
@@ -95,12 +96,20 @@ const GATEWAY_EXCHANGE: string = 'gateway';
 // The exchange used for receiving requests to microservices.
 const REQUEST_EXCHANGE: string = 'request';
 
-// A path to the .json file which describes valid message schema.
-const MESSAGE_SCHEMA_PATH: string = '../schema/event_schema.json';
-
-let compiled_message_schema = null;
-
 export namespace Messaging {
+    export class MessageValidator {
+        schema_validator: Ajv.ValidateFunction;
+
+        constructor(schema: object) {
+            let ajv = new Ajv();
+            this.schema_validator = ajv.compile(schema);
+        }
+
+        validate(msg: any) {
+            return this.schema_validator(msg);
+        }
+    }
+
     export class Messenger {
         // Connection to the RabbitMQ messaging system.
         conn: Connection;
@@ -110,13 +119,13 @@ export namespace Messaging {
 
         rcv_ch: Channel;
 
-        schema_validator: Ajv.ValidateFunction;
+        msg_validator: MessageValidator;
 
-        private constructor(conn: Connection, sendCh: Channel, rcvCh: Channel, schema_validator: Ajv.ValidateFunction) {
+        private constructor(conn: Connection, sendCh: Channel, rcvCh: Channel, msg_validator: MessageValidator) {
             this.conn = conn;
             this.send_ch = sendCh;
             this.rcv_ch = rcvCh;
-            this.schema_validator = schema_validator;
+            this.msg_validator = msg_validator;
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
@@ -146,7 +155,7 @@ export namespace Messaging {
             conn: Connection,
             reqRecvCallback: (content: any) => Promise<string | null>,
             topics: [string],
-            schema_validator: Ajv.ValidateFunction
+            msg_validator: MessageValidator
         ) {
             conn.on('error', (err: Error) => {
                 if (err.message !== 'Connection closing') {
@@ -194,6 +203,12 @@ export namespace Messaging {
 
                                     const contentJson = JSON.parse(msg.content.toString());
 
+                                    if (!msg_validator.validate(contentJson)) {
+                                        // Messages not compliant with the schema are dropped.
+                                        console.log("Message Dropped: Not Schema Compliant");
+                                        return; 
+                                    }
+
                                     const res: string | null = await reqRecvCallback(contentJson);
 
                                     if (res == null) {
@@ -204,7 +219,7 @@ export namespace Messaging {
                                     Messaging.Messenger.sendResponse(contentJson, res, sendCh);
                                 }, { noAck: true });
 
-                            resolve(new Messaging.Messenger(conn, sendCh, rcvCh, schema_validator));
+                            resolve(new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator));
                         });
                     });
                 });
@@ -218,12 +233,12 @@ export namespace Messaging {
         static setup(
             configPath: string,
             reqRecvCallback: (content: any) => Promise<string | null>,
-            topics: [string]
+            topics: [string],
+            schemaPath: string
         ) {
             return new Promise<Messenger>((resolve, reject) => {
-                fs.readFile(MESSAGE_SCHEMA_PATH).then((schemaRaw: Buffer) => {
-                    let ajv = new Ajv();
-                    let schema = ajv.compile(schemaRaw.toJSON());
+                fs.readFile(schemaPath).then((schemaRaw: Buffer) => {
+                    let schema = new MessageValidator(schemaRaw.toJSON());
                     console.log('Connecting to rabbitmq...');
                     fs.readFile(configPath).then((data: Buffer) => {
                         const configJson: MqConfig = JSON.parse(data.toString());

@@ -7,7 +7,7 @@
     "start:old": "node -r source-map-support/register --trace-warnings ./build/app.js",
     "start": "npm run build && npm run start:old",
     "debug": "SET DEBUG=uems-event-micro-dionysus:* & npm start",
-    "test": "mocha build/test/*.test.js"
+    "test": "npm run build && mocha build/test/*.test.js"
   },
   "dependencies": {
     "@types/amqplib": "^0.5.13",
