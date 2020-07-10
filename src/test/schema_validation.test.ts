@@ -62,6 +62,19 @@ const VALID_FULLY_SPECIFIED_GET_MSG = {
     "attendance": 140
 };
 
+const INVALID_GET_MISSING_STATUS_MSG = {
+	"msg_id": "1",
+    "msg_intention": "READ",
+    "event_id": "evID",
+    "event_name": "The Wop",
+    "event_start_date_range_begin": 90,
+    "event_start_date_range_end": 91,
+    "event_end_date_range_begin": 99,
+    "event_end_date_range_end": 100,
+    "venue_ids": ["", ""],
+    "attendance": 140
+};
+
 const INVALID_STATUS_MISSING_MSG = {
 	"msg_id": "1",
     "msg_intention": "READ"
@@ -99,5 +112,9 @@ describe('Valid Schema Test', () => {
     it('should accept the message as this is a fully specified valid read message', async() => {
         let result = await validator.validate(VALID_FULLY_SPECIFIED_GET_MSG);
         assert(result);
+    });
+    it('should reject the message as this read message is missing a status field', async() => {
+        let result = await validator.validate(INVALID_GET_MISSING_STATUS_MSG);
+        assert(!result);
     });
 });
