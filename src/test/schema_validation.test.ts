@@ -74,8 +74,9 @@ describe('Valid Schema Test', () => {
         let validator = new Messaging.MessageValidator(schema);
         assert(validator.validate(VALID_MINIMAL_GET_MSG));
     });
-    // it('Should reject message as status is not a number', () => {
-    //     let validator = new Messaging.MessageValidator(schema);
-    //     assert(!validator.validate(INVALID_STATUS_WRONG_TYPE_MSG));
-    // });
+    it('Should reject message as status is not a number', async () => {
+        let validator = new Messaging.MessageValidator(schema);
+        let result = await validator.validate(INVALID_STATUS_WRONG_TYPE_MSG);
+        assert(!result);
+    });
 });
