@@ -1,0 +1,56 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://entscrew.net/schemas/msg_schema.json",
+    "type": "object",
+    "properties": {
+        "msg_id": {
+            "type": "string",
+            "description": "An ID for this message which is unique within the system"
+        },
+        "status": {
+            "type": "integer",
+            "description": "The status of the message, uses HTTP status codes, 0 value if unset"
+        },
+        "msg_intention": {
+            "type": "string",
+            "enum": [ "GET" ],
+            "description": "The purpose / intention of the message"
+        },
+        "event_id": {
+            "type": "string",
+            "description": "The unique ID of the event to fetch"
+        },
+        "event_name": {
+            "type": "string",
+            "description": "The new human-readable non-unique name of the event"
+        },
+        "event_start_date_range_begin": {
+            "type": "number",
+            "description": "The start of the event start_date range to use for querying events (as a UTC timestamp in seconds since epoch)"
+        },
+        "event_start_date_range_end": {
+            "type": "number",
+            "description": "The end of the event start_date range to use for querying events (as a UTC timestamp in seconds since epoch)"
+        },
+        "event_end_date_range_begin": {
+            "type": "number",
+            "description": "The start of the event end_date range to use for querying events (as a UTC timestamp in seconds since epoch)"
+        },
+        "event_end_date_range_end": {
+            "type": "number",
+            "description": "The end of the event end_date range to use for querying events (as a UTC timestamp in seconds since epoch)"
+        },
+        "venue_ids": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "The unique venue IDs to search for events in"
+            }
+        },
+        "attendance": {
+            "type": "integer",
+            "description": "The attendance of the event"
+        }
+    },
+    "required": ["msg_id", "status", "msg_intention"]
+}
