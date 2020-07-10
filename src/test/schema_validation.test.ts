@@ -80,6 +80,29 @@ const INVALID_STATUS_MISSING_MSG = {
     "msg_intention": "READ"
 };
 
+const VALID_UPDATE_MSG = {
+	"msg_id": "1",
+    "status": 200,
+    "msg_intention": "UPDATE",
+    "event_id": "evID",
+    "event_name": "evName",
+    "event_start_date": 100000,
+    "event_end_date": 100002,
+    "venue_ids": ["1", "2"],
+    "predicted_attendance": 140
+};
+
+const INVALID_UPDATE_MISSING_EVENTID_MSG = {
+	"msg_id": "1",
+    "status": 200,
+    "msg_intention": "UPDATE",
+    "event_name": "evName",
+    "event_start_date": 100000,
+    "event_end_date": 100002,
+    "venue_ids": ["1", "2"],
+    "predicted_attendance": 140
+};
+
 let validator: Messaging.MessageValidator;
 
 before(async() => {
@@ -115,6 +138,14 @@ describe('Valid Schema Test', () => {
     });
     it('should reject the message as this read message is missing a status field', async() => {
         let result = await validator.validate(INVALID_GET_MISSING_STATUS_MSG);
+        assert(!result);
+    });
+    it('should accept the message as a valid update message', async() => {
+        let result = await validator.validate(VALID_UPDATE_MSG);
+        assert(result);
+    });
+    it('should reject the message as the update message is missing an event id', async() => {
+        let result = await validator.validate(INVALID_UPDATE_MISSING_EVENTID_MSG);
         assert(!result);
     });
 });

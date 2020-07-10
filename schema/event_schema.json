@@ -98,6 +98,53 @@
                 }
             },
             "required": ["msg_id", "status", "msg_intention", "event_name", "event_start_date", "event_end_date", "venue_ids", "predicted_attendance"]
+        },
+        {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "msg_id": {
+                    "type": "string",
+                    "description": "An ID for this message which is unique within the system"
+                },
+                "status": {
+                    "type": "integer",
+                    "description": "The status of the message, uses HTTP status codes, 0 value if unset"
+                },
+                "msg_intention": {
+                    "type": "string",
+                    "enum": [ "UPDATE" ],
+                    "description": "The purpose / intention of the message"
+                },
+                "event_id": {
+                    "type": "string",
+                    "description": "The unique ID of the event to modify"
+                },
+                "event_name": {
+                    "type": "string",
+                    "description": "The new human-readable non-unique name of the event"
+                },
+                "event_start_date": {
+                    "type": "number",
+                    "description": "The new event start_date (as a UTC timestamp in seconds since epoch)"
+                },
+                "event_end_date": {
+                    "type": "number",
+                    "description": "The new event end_date (as a UTC timestamp in seconds since epoch)"
+                },
+                "venue_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "description": "The new unique venue IDs for the event"
+                    }
+                },
+                "predicted_attendance": {
+                    "type": "integer",
+                    "description": "The new predicted attendance of the event"
+                }
+            },
+            "required": ["msg_id", "status", "msg_intention", "event_id"]
         }
     ]
     
