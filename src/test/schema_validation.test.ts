@@ -1,6 +1,7 @@
 const assert = require('assert');
 import 'mocha';
 import {Messaging} from "../messaging"
+import { Message } from 'amqplib';
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
@@ -51,32 +52,42 @@ const INVALID_STATUS_WRONG_TYPE_MSG = {
 
 const VALID_MINIMAL_GET_MSG = {
 	"msg_id": "1",
-    "status": "hello",
+    "status": 200,
     "msg_intention": "GET"
 };
 
-let schema: object;
+const INVALID_STATUS_MISSING_MSG = {
+	"msg_id": "1",
+    "msg_intention": "GET"
+};
+
+let validator: Messaging.MessageValidator;
 
 before(async() => {
-    schema = JSON.parse((await fs.readFile(MESSAGE_SCHEMA_PATH)).toString());
+    let schema = JSON.parse((await fs.readFile(MESSAGE_SCHEMA_PATH)).toString());
+    validator = new Messaging.MessageValidator(schema);
 })
 
 describe('Valid Schema Test', () => {
-    it('Should process the message as expected', () => {
-        let validator = new Messaging.MessageValidator(schema);
-        assert(validator.validate(VALID_CREATE_MSG));
+    
+    it('Should process the message as expected', async () => {
+        let result = await validator.validate(VALID_CREATE_MSG);
+        assert(result);
     });
-    it('Should reject message as attendance missing', () => {
-        let validator = new Messaging.MessageValidator(schema);
-        assert(!validator.validate(INVALID_CREATE_MISSING_ATTENDANCE_MSG));
+    it('Should reject message as attendance missing', async () => {
+        let result = await validator.validate(INVALID_CREATE_MISSING_ATTENDANCE_MSG);
+        assert(!result);
     });
-    it('Should accept message as this is the minimum valid get message (get all)', () => {
-        let validator = new Messaging.MessageValidator(schema);
-        assert(validator.validate(VALID_MINIMAL_GET_MSG));
+    it('Should accept message as this is the minimum valid get message (get all)', async () => {
+        let result = await validator.validate(VALID_MINIMAL_GET_MSG);
+        assert(result);
     });
     it('Should reject message as status is not a number', async () => {
-        let validator = new Messaging.MessageValidator(schema);
         let result = await validator.validate(INVALID_STATUS_WRONG_TYPE_MSG);
+        assert(!result);
+    });
+    it('Should reject message as status is missing', async () => {
+        let result = await validator.validate(INVALID_STATUS_MISSING_MSG);
         assert(!result);
     });
 });
