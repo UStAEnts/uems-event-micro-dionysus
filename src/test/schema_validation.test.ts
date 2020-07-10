@@ -103,6 +103,19 @@ const INVALID_UPDATE_MISSING_EVENTID_MSG = {
     "predicted_attendance": 140
 };
 
+const VALID_DELETE_MSG = {
+	"msg_id": "1",
+    "status": 200,
+    "msg_intention": "UPDATE",
+    "event_id": "evID"
+};
+
+const INVALID_DELETE_MISSING_EVENTID_MSG = {
+	"msg_id": "1",
+    "status": 200,
+    "msg_intention": "UPDATE"
+};
+
 let validator: Messaging.MessageValidator;
 
 before(async() => {
@@ -146,6 +159,14 @@ describe('Valid Schema Test', () => {
     });
     it('should reject the message as the update message is missing an event id', async() => {
         let result = await validator.validate(INVALID_UPDATE_MISSING_EVENTID_MSG);
+        assert(!result);
+    });
+    it('should accept the message as a valid delete message', async() => {
+        let result = await validator.validate(VALID_DELETE_MSG);
+        assert(result);
+    });
+    it('should reject the message as the delete message is missing an event id', async() => {
+        let result = await validator.validate(INVALID_DELETE_MISSING_EVENTID_MSG);
         assert(!result);
     });
 });
