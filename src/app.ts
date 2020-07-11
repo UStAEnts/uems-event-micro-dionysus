@@ -100,7 +100,7 @@ async function handleAddReq(db: Database.EventDetailsConnector, content: any): P
         msg_id: content.msg_id,
         status: (result ? MsgStatus.SUCCESS: MsgStatus.FAIL),
         msg_intention: content.msg_intention,
-        event_id: content.event_id
+        result: [content.event_id]
     };
 
     return msg;
@@ -156,7 +156,7 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
         msg_id: content.msg_id,
         status: (result ? MsgStatus.SUCCESS: MsgStatus.FAIL),
         msg_intention: content.msg_intention,
-        event_id: content.event_id
+        result: [content.event_id]
     };
 
     return msg;
@@ -179,7 +179,7 @@ async function handleDeleteReq(db: Database.EventDetailsConnector, content: any)
         msg_id: content.msg_id,
         status: (result ? MsgStatus.SUCCESS: MsgStatus.FAIL),
         msg_intention: content.msg_intention,
-        event_id: content.event_id
+        result: [content.event_id]
     };
 
     return msg;

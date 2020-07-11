@@ -17,15 +17,15 @@ export type ReadRequestResponseResult = {
 }
 
 export type ReadRequestResponseMsg = {
-    msg_id: String,
+    msg_id: Number,
     status: Number,
     msg_intention: MsgIntention,
     result: ReadRequestResponseResult[]
 }
 
 export type RequestResponseMsg = {
-    msg_id: String,
+    msg_id: Number,
     status: Number,
     msg_intention: MsgIntention,
-    event_id: String
+    result: String[]
 }
