@@ -10,9 +10,9 @@ export enum MsgStatus {
 export type ReadRequestResponseResult = {
     event_id: String,
     event_name: String,
-    event_start_date: String,
-    event_end_date: String,
-    venue_ids: [String],
+    event_start_date: Number,
+    event_end_date: Number,
+    venue_ids: String,
     attendance: Number
 }
 
@@ -20,7 +20,7 @@ export type ReadRequestResponseMsg = {
     msg_id: String,
     status: Number,
     msg_intention: MsgIntention,
-    result: [ReadRequestResponseResult]
+    result: ReadRequestResponseResult[]
 }
 
 export type RequestResponseMsg = {

@@ -1,7 +1,7 @@
 import { Channel, connect as amqpConnect, Connection, Message } from 'amqplib/callback_api';
 import Ajv from 'ajv';
 import { Logger } from 'mongodb';
-import { RequestResponseMsg } from './schema/types/event_response_schema'
+import { RequestResponseMsg, ReadRequestResponseMsg} from './schema/types/event_response_schema'
 
 const fs = require('fs').promises;
 
@@ -71,7 +71,7 @@ export namespace Messaging {
 
             console.log("Message passed validation");
 
-            const res: RequestResponseMsg | null = await this.msg_callback(contentJson);
+            const res: ReadRequestResponseMsg | RequestResponseMsg | null = await this.msg_callback(contentJson);
 
             if (res == null) {
                 // A null response indicates no response.
@@ -85,7 +85,7 @@ export namespace Messaging {
 
         // Once a request has been handled and the response returned this method takes that request message and the
         // response message content to generate and send the response message.
-        static async sendResponse(res: RequestResponseMsg, sendCh: Channel) {
+        static async sendResponse(res: RequestResponseMsg | ReadRequestResponseMsg, sendCh: Channel) {
             sendCh.publish(GATEWAY_EXCHANGE, '', Buffer.from(JSON.stringify(res)));
         }
 

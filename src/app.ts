@@ -109,21 +109,30 @@ async function handleAddReq(db: Database.EventDetailsConnector, content: any): P
 async function handleQueryReq(db: Database.EventDetailsConnector, content: any): Promise<ReadRequestResponseMsg | null> {
     const query = generate_query(content);
 
-    let data = await db.retrieveQuery(query);
+    let data: Database.UemsEvent[] = await db.retrieveQuery(query);
 
     console.log("Query data");
     console.log(data);
 
-    // let result_data: [ReadRequestResponseResult] = [];
+    let result_data: ReadRequestResponseResult[] = data.map((e: Database.UemsEvent) => {
+        return {
+            event_id: e._id,
+            event_name: e.name,
+            event_start_date: e.start_date,
+            event_end_date: e.end_date,
+            venue_ids: JSON.stringify(["0"]),
+            attendance: 0
+        }
+    });
 
-    // let msg: ReadRequestResponseMsg = {
-    //     msg_id: content.msg_id,
-    //     status: MsgStatus.SUCCESS,
-    //     msg_intention: content.msg_intention,
-    //     result: result_data
-    // };
+    let msg: ReadRequestResponseMsg = {
+        msg_id: content.msg_id,
+        status: MsgStatus.SUCCESS,
+        msg_intention: content.msg_intention,
+        result: result_data
+    };
 
-    return null;
+    return msg;
 }
 
 async function handleModifyReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null> {
@@ -176,7 +185,7 @@ async function handleDeleteReq(db: Database.EventDetailsConnector, content: any)
     return msg;
 }
 
-async function reqReceived(content: any): Promise<RequestResponseMsg | null> {
+async function reqReceived(content: any): Promise<RequestResponseMsg | ReadRequestResponseMsg | null> {
     // TODO: checks for message integrity.
 
     if (content == null || eventsDb == null) {
@@ -189,8 +198,7 @@ async function reqReceived(content: any): Promise<RequestResponseMsg | null> {
 
     switch (content.msg_intention) {
         case 'READ':
-            handleQueryReq(eventsDb, content);
-            return null;
+            return handleQueryReq(eventsDb, content);
         case 'CREATE':
             return handleAddReq(eventsDb, content);
         case 'UPDATE':

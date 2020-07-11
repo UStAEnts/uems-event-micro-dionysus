@@ -8,6 +8,13 @@ const EVENT_DB = 'events';
 
 export namespace Database {
 
+    export type UemsEvent = {
+        _id: string,
+        name: string,
+        start_date: Number, // dates in seconds since epoch
+        end_date: Number
+    }
+
     export async function connect(uri: string): Promise<EventDetailsConnector> {
         try {
             const client = await MongoClient.connect(uri, {
@@ -27,9 +34,9 @@ export namespace Database {
         constructor(private db: MongoClient.Db) {
         }
 
-        async retrieveQuery(query: {}): Promise<any[]> {
+        async retrieveQuery(query: {}): Promise<Database.UemsEvent[]> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            let res = await collection.find(query).toArray();
+            let res: UemsEvent[] = await collection.find(query).toArray();
             return res;
         }
 
