@@ -37,23 +37,23 @@ function generate_query(content: any): any {
     let query = {};
 
     // There is probably a better way to do this - maybe a content.map(|v| if (v.isEmpty()){remove(v)}) type thing. 
-    if (content.name != '') {
+    if (content.name !== undefined) {
         Object.assign(query, {name: content.name});
     }
 
-    if (content.start_date_before != '') {
+    if (content.start_date_before !== undefined) {
         Object.assign(query, {start_date_before: content.start_date_before});
     }
 
-    if (content.start_date_after != '') {
+    if (content.start_date_after !== undefined) {
         Object.assign(query, {start_date_after: content.start_date_after});
     }
 
-    if (content.end_date_before != '') {
+    if (content.end_date_before !== undefined) {
         Object.assign(query, {end_date_before: content.end_date_before});
     }
     
-    if (content.end_date_after != '') {
+    if (content.end_date_after !== undefined) {
         Object.assign(query, {end_date_after: content.end_date_after});
     }
 

@@ -29,7 +29,8 @@ export namespace Database {
 
         async retrieveQuery(query: {}): Promise<any[]> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            return collection.find(query).toArray();
+            let res = await collection.find(query).toArray();
+            return res;
         }
 
         async insertEvent(content: any): Promise<boolean> {
