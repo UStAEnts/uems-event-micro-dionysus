@@ -6,6 +6,8 @@ import morgan from 'morgan';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 
+import {RequestResponseMsg, MsgStatus, ReadRequestResponseMsg, ReadRequestResponseResult} from './schema/types/event_response_schema';
+
 import * as MongoClient from 'mongodb';
 
 // The topic used for messages destined to microservices of this type.
@@ -58,7 +60,7 @@ function generate_query(content: any): any {
     return query;
 }
 
-async function handleUnsupportedOp(content: any): Promise<string | null> {
+async function handleUnsupportedOp(content: any): Promise<RequestResponseMsg | null>  {
     console.error("Unsupported operation: ");
     console.error(content.msg_intention);
     return null;
@@ -86,7 +88,7 @@ function extractEvent(content: any) {
     };
 }
 
-async function handleAddReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+async function handleAddReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null>  {
     const event = extractEvent(content);
 
     // TODO, proper event rejection.
@@ -94,18 +96,37 @@ async function handleAddReq(db: Database.EventDetailsConnector, content: any): P
 
     const result = await db.insertEvent(event);
 
-    return JSON.stringify(result);
+    let msg: RequestResponseMsg = {
+        msg_id: content.msg_id,
+        status: (result ? MsgStatus.SUCCESS: MsgStatus.FAIL),
+        msg_intention: content.msg_intention,
+        event_id: content.event_id
+    };
+
+    return msg;
 }
 
-async function handleQueryReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+async function handleQueryReq(db: Database.EventDetailsConnector, content: any): Promise<ReadRequestResponseMsg | null> {
     const query = generate_query(content);
 
-    const data = await db.retrieveQuery(query);
+    let data = await db.retrieveQuery(query);
 
-    return JSON.stringify(data);
+    console.log("Query data");
+    console.log(data);
+
+    // let result_data: [ReadRequestResponseResult] = [];
+
+    // let msg: ReadRequestResponseMsg = {
+    //     msg_id: content.msg_id,
+    //     status: MsgStatus.SUCCESS,
+    //     msg_intention: content.msg_intention,
+    //     result: result_data
+    // };
+
+    return null;
 }
 
-async function handleModifyReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+async function handleModifyReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null> {
     // TODO find and update only part of the event.
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
@@ -122,12 +143,17 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
 
     const result = await db.findAndModifyEvent(content.event_id, new_event);
 
-    // TODO, processing response result beyond just returning the result.
+    let msg: RequestResponseMsg = {
+        msg_id: content.msg_id,
+        status: (result ? MsgStatus.SUCCESS: MsgStatus.FAIL),
+        msg_intention: content.msg_intention,
+        event_id: content.event_id
+    };
 
-    return JSON.stringify(result);
+    return msg;
 }
 
-async function handleDeleteReq(db: Database.EventDetailsConnector, content: any): Promise<string | null> {
+async function handleDeleteReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null> {
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
     //          have an inconsistent view of the event.
@@ -137,14 +163,20 @@ async function handleDeleteReq(db: Database.EventDetailsConnector, content: any)
         return null;
     }
 
+    // TODO, check remove event successful.
     const result = await db.removeEvent(content.event_id);
 
-    // TODO, processing response result beyond just returning the result.
+    let msg: RequestResponseMsg = {
+        msg_id: content.msg_id,
+        status: (result ? MsgStatus.SUCCESS: MsgStatus.FAIL),
+        msg_intention: content.msg_intention,
+        event_id: content.event_id
+    };
 
-    return JSON.stringify(result);
+    return msg;
 }
 
-async function reqReceived(content: any): Promise<string | null> {
+async function reqReceived(content: any): Promise<RequestResponseMsg | null> {
     // TODO: checks for message integrity.
 
     if (content == null || eventsDb == null) {
@@ -157,7 +189,8 @@ async function reqReceived(content: any): Promise<string | null> {
 
     switch (content.msg_intention) {
         case 'READ':
-            return handleQueryReq(eventsDb, content);
+            handleQueryReq(eventsDb, content);
+            return null;
         case 'CREATE':
             return handleAddReq(eventsDb, content);
         case 'UPDATE':

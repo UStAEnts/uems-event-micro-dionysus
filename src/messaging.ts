@@ -1,6 +1,7 @@
 import { Channel, connect as amqpConnect, Connection, Message } from 'amqplib/callback_api';
 import Ajv from 'ajv';
 import { Logger } from 'mongodb';
+import { RequestResponseMsg } from './schema/types/event_response_schema'
 
 const fs = require('fs').promises;
 
@@ -70,7 +71,7 @@ export namespace Messaging {
 
             console.log("Message passed validation");
 
-            const res: string | null = await this.msg_callback(contentJson);
+            const res: RequestResponseMsg | null = await this.msg_callback(contentJson);
 
             if (res == null) {
                 // A null response indicates no response.
@@ -79,26 +80,13 @@ export namespace Messaging {
 
             console.log("Sending response");
 
-            return Messaging.Messenger.sendResponse(contentJson.msg_id, res, this.send_ch);
+            return Messaging.Messenger.sendResponse(res, this.send_ch);
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
         // response message content to generate and send the response message.
-        static async sendResponse(msgID: string, res: string, sendCh: Channel) {
-            if (msgID === undefined || msgID === null) {
-                // Without knowing the sender ID cannot send a response.
-                // Message dropped.
-                console.error('Received message without ID, reply cannot be sent - message dropped!');
-                return;
-            }
-
-            const responseMsg = {
-                ID: msgID,
-                payload: res,
-            };
-
-            console.log('Response sent');
-            sendCh.publish(GATEWAY_EXCHANGE, '', Buffer.from(JSON.stringify(responseMsg)));
+        static async sendResponse(res: RequestResponseMsg, sendCh: Channel) {
+            sendCh.publish(GATEWAY_EXCHANGE, '', Buffer.from(JSON.stringify(res)));
         }
 
         // Configure the connection ready for usage by the microservice.

@@ -27,36 +27,43 @@ export namespace Database {
         constructor(private db: MongoClient.Db) {
         }
 
-        retrieveQuery(query: {}): Promise<any[]> {
+        async retrieveQuery(query: {}): Promise<any[]> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             return collection.find(query).toArray();
         }
 
-        insertEvent(content: any): Promise<any> {
+        async insertEvent(content: any): Promise<boolean> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            return collection.insertOne(content);
+            let res = await collection.insertOne(content);
+
+            return (res.result.ok !== undefined)
         }
 
-        findAndModifyEvent(event_id: number, new_event: any): Promise<any> {
+        async findAndModifyEvent(event_id: number, new_event: any): Promise<boolean> {
             // TODO, setup the database so changes are timestamped in a reversable way. 
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
 
-            return collection.replaceOne(
+            let res = await collection.replaceOne(
                 {
                     _id: new MongoClient.ObjectID(event_id),
                 }, 
                 new_event
                 );
+            
+            return (res.result.ok !== undefined)
         }
 
-        removeEvent(event_id: number): Promise<any> {
+        // Return true if successful.
+        async removeEvent(event_id: number): Promise<boolean> {
             // TODO, setup the database so changes are timestamped in a reversable way. 
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            return collection.deleteOne(
+            let res: MongoClient.DeleteWriteOpResultObject = await collection.deleteOne(
                 {
                     _id: new MongoClient.ObjectID(event_id),
                 }
             );
+            
+            return (res.result.ok !== undefined)
         }
     }
 
