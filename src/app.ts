@@ -59,6 +59,8 @@ function generate_query(content: any): any {
 }
 
 async function handleUnsupportedOp(content: any): Promise<string | null> {
+    console.error("Unsupported operation: ");
+    console.error(content.msg_intention);
     return null;
 }
 
@@ -153,16 +155,17 @@ async function reqReceived(content: any): Promise<string | null> {
         return null;
     }
 
-    switch (content.type) {
-        case 'query':
+    switch (content.msg_intention) {
+        case 'READ':
             return handleQueryReq(eventsDb, content);
-        case 'add':
+        case 'CREATE':
             return handleAddReq(eventsDb, content);
-        case 'modify':
+        case 'UPDATE':
             return handleModifyReq(eventsDb, content);
-        case 'delete':
+        case 'DELETE':
             return handleDeleteReq(eventsDb, content);
         default:
+            console.log(content);
             return handleUnsupportedOp(content);
     }
 }

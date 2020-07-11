@@ -58,15 +58,17 @@ export namespace Messaging {
                 return;
             }
 
-            const contentJson = JSON.parse(msg.content.toString());
+            const contentJson = JSON.parse(JSON.parse(msg.content.toString()));
 
-            if (!await this.msg_validator.validate(contentJson)) {
+            if (!(await this.msg_validator.validate(contentJson))) {
                 // Messages not compliant with the schema are dropped.
                 console.log("Message Dropped: Not Schema Compliant");
                 console.log(contentJson);
                 console.log(this.msg_validator.schema_validator.errors);
                 return; 
             }
+
+            console.log("Message passed validation");
 
             const res: string | null = await this.msg_callback(contentJson);
 
@@ -75,13 +77,15 @@ export namespace Messaging {
                 return;
             }
 
-            return Messaging.Messenger.sendResponse(contentJson, res, this.send_ch);
+            console.log("Sending response");
+
+            return Messaging.Messenger.sendResponse(contentJson.msg_id, res, this.send_ch);
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
         // response message content to generate and send the response message.
-        static async sendResponse(msgContent: any, res: string, sendCh: Channel) {
-            if (msgContent.ID === undefined || msgContent.ID === null) {
+        static async sendResponse(msgID: string, res: string, sendCh: Channel) {
+            if (msgID === undefined || msgID === null) {
                 // Without knowing the sender ID cannot send a response.
                 // Message dropped.
                 console.error('Received message without ID, reply cannot be sent - message dropped!');
@@ -89,7 +93,7 @@ export namespace Messaging {
             }
 
             const responseMsg = {
-                ID: msgContent.ID,
+                ID: msgID,
                 payload: res,
             };
 
@@ -148,7 +152,6 @@ export namespace Messaging {
                             let messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator, msg_callback);
 
                             rcvCh.consume(queue.queue, async(msg) => {
-
                                 await messenger.handleMsg(msg)   
                             }, { noAck: true });
 
