@@ -63,6 +63,8 @@ export namespace Messaging {
             if (!await this.msg_validator.validate(contentJson)) {
                 // Messages not compliant with the schema are dropped.
                 console.log("Message Dropped: Not Schema Compliant");
+                console.log(contentJson);
+                console.log(this.msg_validator.schema_validator.errors);
                 return; 
             }
 

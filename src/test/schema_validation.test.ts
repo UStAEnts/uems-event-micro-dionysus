@@ -8,7 +8,7 @@ const MESSAGE_SCHEMA_PATH: string = 'schema/event_schema.json';
 const fs = require('fs').promises;
 
 const VALID_CREATE_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "CREATE",
     "event_name": "evName",
@@ -19,7 +19,7 @@ const VALID_CREATE_MSG = {
 };
 
 const INVALID_CREATE_MISSING_ATTENDANCE_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "CREATE",
     "event_id": "evId",
@@ -30,7 +30,7 @@ const INVALID_CREATE_MISSING_ATTENDANCE_MSG = {
 };
 
 const INVALID_STATUS_WRONG_TYPE_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": "hello",
     "msg_intention": "CREATE",
     "event_id": "evId",
@@ -43,13 +43,13 @@ const INVALID_STATUS_WRONG_TYPE_MSG = {
 
 
 const VALID_MINIMAL_GET_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "READ"
 };
 
 const VALID_FULLY_SPECIFIED_GET_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "READ",
     "event_id": "evID",
@@ -59,11 +59,11 @@ const VALID_FULLY_SPECIFIED_GET_MSG = {
     "event_end_date_range_begin": 99,
     "event_end_date_range_end": 100,
     "venue_ids": ["", ""],
-    "attendance": 140
+    "predicted_attendance": 140
 };
 
 const INVALID_GET_MISSING_STATUS_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "msg_intention": "READ",
     "event_id": "evID",
     "event_name": "The Wop",
@@ -76,12 +76,12 @@ const INVALID_GET_MISSING_STATUS_MSG = {
 };
 
 const INVALID_STATUS_MISSING_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "msg_intention": "READ"
 };
 
 const VALID_UPDATE_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "UPDATE",
     "event_id": "evID",
@@ -93,7 +93,7 @@ const VALID_UPDATE_MSG = {
 };
 
 const INVALID_UPDATE_MISSING_EVENTID_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "UPDATE",
     "event_name": "evName",
@@ -104,14 +104,14 @@ const INVALID_UPDATE_MISSING_EVENTID_MSG = {
 };
 
 const VALID_DELETE_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "UPDATE",
     "event_id": "evID"
 };
 
 const INVALID_DELETE_MISSING_EVENTID_MSG = {
-	"msg_id": "1",
+	"msg_id": 1,
     "status": 200,
     "msg_intention": "UPDATE"
 };
