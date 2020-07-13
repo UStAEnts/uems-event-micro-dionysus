@@ -1,5 +1,5 @@
 export enum MsgIntention {
-    CREATE = "CREATE", READ = "READ", UPDATE = "UPDATE", DELETE = "DELETE"
+    CREATE = 'CREATE', READ = 'READ', UPDATE = 'UPDATE', DELETE = 'DELETE'
 }
 
 export enum MsgStatus {
@@ -7,25 +7,26 @@ export enum MsgStatus {
     FAIL = 405
 }
 
-export type ReadRequestResponseResult = {
-    event_id: String,
-    event_name: String,
+// Internal event representation in messages.
+export type InternalEvent = {
+    event_id: string,
+    event_name: string,
     event_start_date: Number,
     event_end_date: Number,
-    venue_ids: String,
+    venue_ids: string,
     attendance: Number
-}
+};
 
 export type ReadRequestResponseMsg = {
     msg_id: Number,
     status: Number,
     msg_intention: MsgIntention,
-    result: ReadRequestResponseResult[]
-}
+    result: InternalEvent[]
+};
 
 export type RequestResponseMsg = {
     msg_id: Number,
     status: Number,
     msg_intention: MsgIntention,
-    result: String[]
-}
+    result: string[] // The ids of the event(s) effected.
+};

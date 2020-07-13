@@ -9,10 +9,55 @@ const EVENT_DB = 'events';
 export namespace Database {
 
     export type UemsEvent = {
-        _id: string,
+        id: string,
         name: string,
         start_date: Number, // dates in seconds since epoch
         end_date: Number
+    };
+
+    export class EventDetailsConnector {
+        constructor(private db: MongoClient.Db) {
+        }
+
+        async retrieveQuery(query: {}): Promise<Database.UemsEvent[]> {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            const res: UemsEvent[] = await collection.find(query).toArray();
+            return res;
+        }
+
+        async insertEvent(content: any): Promise<boolean> {
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            const res = await collection.insertOne(content);
+
+            return (res.result.ok !== undefined);
+        }
+
+        async findAndModifyEvent(eventId: number, newEvent: any): Promise<boolean> {
+            // TODO, setup the database so changes are timestamped in a reversable way.
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+
+            const res = await collection.replaceOne(
+                {
+                    _id: new MongoClient.ObjectID(eventId),
+                },
+                newEvent,
+            );
+
+            return (res.result.ok !== undefined);
+        }
+
+        // Return true if successful.
+        async removeEvent(eventId: number): Promise<boolean> {
+            // TODO, setup the database so changes are timestamped in a reversable way.
+            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
+            const res: MongoClient.DeleteWriteOpResultObject = await collection.deleteOne(
+                {
+                    _id: new MongoClient.ObjectID(eventId),
+                },
+            );
+
+            return (res.result.ok !== undefined);
+        }
     }
 
     export async function connect(uri: string): Promise<EventDetailsConnector> {
@@ -28,51 +73,4 @@ export namespace Database {
             throw e;
         }
     }
-
-    export class EventDetailsConnector {
-
-        constructor(private db: MongoClient.Db) {
-        }
-
-        async retrieveQuery(query: {}): Promise<Database.UemsEvent[]> {
-            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            let res: UemsEvent[] = await collection.find(query).toArray();
-            return res;
-        }
-
-        async insertEvent(content: any): Promise<boolean> {
-            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            let res = await collection.insertOne(content);
-
-            return (res.result.ok !== undefined)
-        }
-
-        async findAndModifyEvent(event_id: number, new_event: any): Promise<boolean> {
-            // TODO, setup the database so changes are timestamped in a reversable way. 
-            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-
-            let res = await collection.replaceOne(
-                {
-                    _id: new MongoClient.ObjectID(event_id),
-                }, 
-                new_event
-                );
-            
-            return (res.result.ok !== undefined)
-        }
-
-        // Return true if successful.
-        async removeEvent(event_id: number): Promise<boolean> {
-            // TODO, setup the database so changes are timestamped in a reversable way. 
-            const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
-            let res: MongoClient.DeleteWriteOpResultObject = await collection.deleteOne(
-                {
-                    _id: new MongoClient.ObjectID(event_id),
-                }
-            );
-            
-            return (res.result.ok !== undefined)
-        }
-    }
-
 }

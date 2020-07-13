@@ -1,7 +1,8 @@
-import { Channel, connect as amqpConnect, Connection, Message } from 'amqplib/callback_api';
-import Ajv from 'ajv';
-import { Logger } from 'mongodb';
-import { RequestResponseMsg, ReadRequestResponseMsg} from './schema/types/event_response_schema'
+import {
+    Channel, connect as amqpConnect, Connection, Message,
+} from 'amqplib/callback_api';
+import { RequestResponseMsg, ReadRequestResponseMsg } from './uemsCommLib/messaging/types/event_response_schema';
+import { MessageValidator } from './uemsCommLib/messaging/MessageValidator';
 
 const fs = require('fs').promises;
 
@@ -20,19 +21,6 @@ const GATEWAY_EXCHANGE: string = 'gateway';
 const REQUEST_EXCHANGE: string = 'request';
 
 export namespace Messaging {
-    export class MessageValidator {
-        schema_validator: Ajv.ValidateFunction;
-
-        constructor(schema: object) {
-            let ajv = new Ajv({allErrors: true});
-            this.schema_validator = ajv.compile(schema);
-        }
-
-        public async validate(msg: any): Promise<boolean> {
-            return await this.schema_validator(msg);
-        }
-    }
-
     export class Messenger {
         // Connection to the RabbitMQ messaging system.
         conn: Connection;
@@ -46,15 +34,21 @@ export namespace Messaging {
 
         msg_callback: Function;
 
-        private constructor(conn: Connection, sendCh: Channel, rcvCh: Channel, msg_validator: MessageValidator, msg_callback: Function) {
+        private constructor(
+            conn: Connection,
+            sendCh: Channel,
+            rcvCh: Channel,
+            msgValidator: MessageValidator,
+            msgCallback: Function,
+        ) {
             this.conn = conn;
             this.send_ch = sendCh;
             this.rcv_ch = rcvCh;
-            this.msg_validator = msg_validator;
-            this.msg_callback = msg_callback;
+            this.msg_validator = msgValidator;
+            this.msg_callback = msgCallback;
         }
 
-        async handleMsg(msg: Message | null): Promise<any> {
+        async handleMsg(msg: Message | null) {
             if (msg == null) {
                 return;
             }
@@ -63,13 +57,9 @@ export namespace Messaging {
 
             if (!(await this.msg_validator.validate(contentJson))) {
                 // Messages not compliant with the schema are dropped.
-                console.log("Message Dropped: Not Schema Compliant");
-                console.log(contentJson);
-                console.log(this.msg_validator.schema_validator.errors);
-                return; 
+                console.log('Message Dropped: Not Schema Compliant');
+                return;
             }
-
-            console.log("Message passed validation");
 
             const res: ReadRequestResponseMsg | RequestResponseMsg | null = await this.msg_callback(contentJson);
 
@@ -78,9 +68,7 @@ export namespace Messaging {
                 return;
             }
 
-            console.log("Sending response");
-
-            return Messaging.Messenger.sendResponse(res, this.send_ch);
+            Messaging.Messenger.sendResponse(res, this.send_ch);
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
@@ -95,9 +83,9 @@ export namespace Messaging {
         // If the callback resolves to null then no response is sent.
         static async configureConnection(
             conn: Connection,
-            msg_callback: Function,
+            msgCallback: Function,
             topics: [string],
-            msg_validator: MessageValidator
+            msgValidator: MessageValidator,
         ) {
             conn.on('error', (err: Error) => {
                 if (err.message !== 'Connection closing') {
@@ -137,10 +125,10 @@ export namespace Messaging {
                                 rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
                             });
 
-                            let messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msg_validator, msg_callback);
+                            const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidator, msgCallback);
 
-                            rcvCh.consume(queue.queue, async(msg) => {
-                                await messenger.handleMsg(msg)   
+                            rcvCh.consume(queue.queue, async (msg) => {
+                                await messenger.handleMsg(msg);
                             }, { noAck: true });
 
                             resolve(messenger);
@@ -154,26 +142,23 @@ export namespace Messaging {
         // sending responses. Uses the config at the given path to configure the connection to rabbitMQ. The given
         // req_recv_callback is called if a message is received with the argument being the message content as an
         // object.
-        static setup(
+        static async setup(
             configPath: string,
             reqRecvCallback: Function,
             topics: [string],
-            schemaPath: string
+            schemaPath: string,
         ) {
-            return new Promise<Messenger>(async (resolve, reject) => {
-                let schema = JSON.parse((await fs.readFile(schemaPath)).toString());
-                let msg_validator = new MessageValidator(schema);
-                console.log('Connecting to rabbitmq...');
-                fs.readFile(configPath).then((data: Buffer) => {
-                    const configJson: MqConfig = JSON.parse(data.toString());
-                    amqpConnect(`${configJson.uri}?heartbeat=60`, async (err: Error, conn: Connection) => {
-                        if (err) {
-                            console.error('[AMQP]', err.message);
-                            reject(err);
-                            return;
-                        }
-                        resolve(await Messenger.configureConnection(conn, reqRecvCallback, topics, msg_validator));
-                    });
+            const schema = JSON.parse((await fs.readFile(schemaPath)).toString());
+            const msgValidator = new MessageValidator(schema);
+            console.log('Connecting to rabbitmq...');
+            fs.readFile(configPath).then((data: Buffer) => {
+                const configJson: MqConfig = JSON.parse(data.toString());
+                amqpConnect(`${configJson.uri}?heartbeat=60`, async (err: Error, conn: Connection) => {
+                    if (err) {
+                        console.error('[AMQP]', err.message);
+                        return err;
+                    }
+                    return Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator);
                 });
             });
         }
