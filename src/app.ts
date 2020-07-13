@@ -6,8 +6,8 @@ import express = require('express');
 import cookieParser = require('cookie-parser');
 
 import {
-    RequestResponseMsg, MsgStatus, ReadRequestResponseMsg, InternalEvent,
-} from './uemsCommLib/messaging/types/event_response_schema';
+    InternalEvent, ReadRequestResponseMsg, RequestResponseMsg, MsgStatus,
+} from '../../uemsCommLib/src/messaging/types/event_response_schema';
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';

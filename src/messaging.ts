@@ -1,8 +1,9 @@
 import {
     Channel, connect as amqpConnect, Connection, Message,
 } from 'amqplib/callback_api';
-import { RequestResponseMsg, ReadRequestResponseMsg } from './uemsCommLib/messaging/types/event_response_schema';
-import { MessageValidator } from './uemsCommLib/messaging/MessageValidator';
+import { MessageValidator } from '../../uemsCommLib/src/messaging/MessageValidator';
+import { ReadRequestResponseMsg, RequestResponseMsg }
+    from '../../uemsCommLib/src/messaging/types/event_response_schema';
 
 const fs = require('fs').promises;
 
