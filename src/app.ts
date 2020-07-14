@@ -1,9 +1,10 @@
-import * as fs from 'fs';
 import { Database } from './EventDetailsConnector';
 import { Messaging } from './messaging';
 import morgan from 'morgan';
 import express = require('express');
 import cookieParser = require('cookie-parser');
+
+const fs = require('fs').promises;
 
 import { EventRes } from '@uems/uemscommlib';
 
@@ -262,7 +263,7 @@ async function databaseConnectionReady(eventsConnection: Database.EventDetailsCo
 
 // Start of the mongoDB connection.
 // The connection info (including username / password) is read from configuration file.
-fs.readFile('database.json', { encoding: 'utf-8' }, (err, data) => {
+fs.readFile('database.json', { encoding: 'utf-8' }, (err: any, data: any) => {
     if (err) {
         console.error('Failed to read database.json file... database connection failed...');
         return;
