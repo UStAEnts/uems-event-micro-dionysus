@@ -5,9 +5,7 @@ import morgan from 'morgan';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 
-import {
-    InternalEvent, ReadRequestResponseMsg, RequestResponseMsg, MsgStatus,
-} from '../../uemsCommLib/src/messaging/types/event_response_schema';
+import { EventRes } from '@uems/uemscommlib';
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
@@ -58,7 +56,7 @@ function generateQuery(content: any): any {
     return query;
 }
 
-async function handleUnsupportedOp(content: any): Promise<RequestResponseMsg | null> {
+async function handleUnsupportedOp(content: any): Promise<EventRes.RequestResponseMsg | null> {
     console.error('Unsupported operation: ');
     console.error(content.msg_intention);
     return null;
@@ -85,7 +83,10 @@ function extractEvent(content: any) {
     };
 }
 
-async function handleAddReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null> {
+async function handleAddReq(
+    db: Database.EventDetailsConnector,
+    content: any,
+): Promise<EventRes.RequestResponseMsg | null> {
     const event = extractEvent(content);
 
     // TODO, proper event rejection.
@@ -93,9 +94,9 @@ async function handleAddReq(db: Database.EventDetailsConnector, content: any): P
 
     const result = await db.insertEvent(event);
 
-    const msg: RequestResponseMsg = {
+    const msg: EventRes.RequestResponseMsg = {
         msg_id: content.msg_id,
-        status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
+        status: (result ? EventRes.MsgStatus.SUCCESS : EventRes.MsgStatus.FAIL),
         msg_intention: content.msg_intention,
         result: [content.event_id],
     };
@@ -106,12 +107,12 @@ async function handleAddReq(db: Database.EventDetailsConnector, content: any): P
 async function handleQueryReq(
     db: Database.EventDetailsConnector,
     content: any,
-): Promise<ReadRequestResponseMsg | null> {
+): Promise<EventRes.ReadRequestResponseMsg | null> {
     const query = generateQuery(content);
 
     const data: Database.UemsEvent[] = await db.retrieveQuery(query);
 
-    const resultData: InternalEvent[] = data.map((e: Database.UemsEvent) => ({
+    const resultData: EventRes.InternalEvent[] = data.map((e: Database.UemsEvent) => ({
         event_id: e.id,
         event_name: e.name,
         event_start_date: e.start_date,
@@ -120,9 +121,9 @@ async function handleQueryReq(
         attendance: 0,
     }));
 
-    const msg: ReadRequestResponseMsg = {
+    const msg: EventRes.ReadRequestResponseMsg = {
         msg_id: content.msg_id,
-        status: MsgStatus.SUCCESS,
+        status: EventRes.MsgStatus.SUCCESS,
         msg_intention: content.msg_intention,
         result: resultData,
     };
@@ -130,7 +131,10 @@ async function handleQueryReq(
     return msg;
 }
 
-async function handleModifyReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null> {
+async function handleModifyReq(
+    db: Database.EventDetailsConnector,
+    content: any,
+): Promise<EventRes.RequestResponseMsg | null> {
     // TODO find and update only part of the event.
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
@@ -147,9 +151,9 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
 
     const result = await db.findAndModifyEvent(content.event_id, newEvent);
 
-    const msg: RequestResponseMsg = {
+    const msg: EventRes.RequestResponseMsg = {
         msg_id: content.msg_id,
-        status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
+        status: (result ? EventRes.MsgStatus.SUCCESS : EventRes.MsgStatus.FAIL),
         msg_intention: content.msg_intention,
         result: [content.event_id],
     };
@@ -157,7 +161,10 @@ async function handleModifyReq(db: Database.EventDetailsConnector, content: any)
     return msg;
 }
 
-async function handleDeleteReq(db: Database.EventDetailsConnector, content: any): Promise<RequestResponseMsg | null> {
+async function handleDeleteReq(
+    db: Database.EventDetailsConnector,
+    content: any,
+): Promise<EventRes.RequestResponseMsg | null> {
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
     //          have an inconsistent view of the event.
@@ -170,9 +177,9 @@ async function handleDeleteReq(db: Database.EventDetailsConnector, content: any)
     // TODO, check remove event successful.
     const result = await db.removeEvent(content.event_id);
 
-    const msg: RequestResponseMsg = {
+    const msg: EventRes.RequestResponseMsg = {
         msg_id: content.msg_id,
-        status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
+        status: (result ? EventRes.MsgStatus.SUCCESS : EventRes.MsgStatus.FAIL),
         msg_intention: content.msg_intention,
         result: [content.event_id],
     };
@@ -180,7 +187,9 @@ async function handleDeleteReq(db: Database.EventDetailsConnector, content: any)
     return msg;
 }
 
-async function reqReceived(content: any): Promise<RequestResponseMsg | ReadRequestResponseMsg | null> {
+async function reqReceived(
+    content: any,
+): Promise<EventRes.RequestResponseMsg | EventRes.ReadRequestResponseMsg | null> {
     // TODO: checks for message integrity.
 
     if (content == null || eventsDb == null) {

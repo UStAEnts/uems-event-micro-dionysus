@@ -1,9 +1,8 @@
 import {
     Channel, connect as amqpConnect, Connection, Message,
 } from 'amqplib/callback_api';
-import { MessageValidator } from '../../uemsCommLib/src/messaging/MessageValidator';
-import { ReadRequestResponseMsg, RequestResponseMsg }
-    from '../../uemsCommLib/src/messaging/types/event_response_schema';
+
+import { MessageValidator, EventRes } from '@uems/uemscommlib';
 
 const fs = require('fs').promises;
 
@@ -31,7 +30,7 @@ export namespace Messaging {
 
         rcv_ch: Channel;
 
-        msg_validator: MessageValidator;
+        msg_validator: MessageValidator.MessageValidator;
 
         msg_callback: Function;
 
@@ -39,7 +38,7 @@ export namespace Messaging {
             conn: Connection,
             sendCh: Channel,
             rcvCh: Channel,
-            msgValidator: MessageValidator,
+            msgValidator: MessageValidator.MessageValidator,
             msgCallback: Function,
         ) {
             this.conn = conn;
@@ -62,7 +61,9 @@ export namespace Messaging {
                 return;
             }
 
-            const res: ReadRequestResponseMsg | RequestResponseMsg | null = await this.msg_callback(contentJson);
+            const res: EventRes.ReadRequestResponseMsg |
+            EventRes.RequestResponseMsg |
+            null = await this.msg_callback(contentJson);
 
             if (res == null) {
                 // A null response indicates no response.
@@ -74,7 +75,7 @@ export namespace Messaging {
 
         // Once a request has been handled and the response returned this method takes that request message and the
         // response message content to generate and send the response message.
-        static async sendResponse(res: RequestResponseMsg | ReadRequestResponseMsg, sendCh: Channel) {
+        static async sendResponse(res: EventRes.RequestResponseMsg | EventRes.ReadRequestResponseMsg, sendCh: Channel) {
             sendCh.publish(GATEWAY_EXCHANGE, '', Buffer.from(JSON.stringify(res)));
         }
 
@@ -86,7 +87,7 @@ export namespace Messaging {
             conn: Connection,
             msgCallback: Function,
             topics: [string],
-            msgValidator: MessageValidator,
+            msgValidator: MessageValidator.MessageValidator,
         ) {
             conn.on('error', (err: Error) => {
                 if (err.message !== 'Connection closing') {
@@ -150,7 +151,7 @@ export namespace Messaging {
             schemaPath: string,
         ) {
             const schema = JSON.parse((await fs.readFile(schemaPath)).toString());
-            const msgValidator = new MessageValidator(schema);
+            const msgValidator = new MessageValidator.MessageValidator(schema);
             console.log('Connecting to rabbitmq...');
             fs.readFile(configPath).then((data: Buffer) => {
                 const configJson: MqConfig = JSON.parse(data.toString());
