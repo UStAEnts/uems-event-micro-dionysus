@@ -2,7 +2,7 @@ import {
     Channel, connect as amqpConnect, Connection, Message,
 } from 'amqplib/callback_api';
 
-import { MessageValidator, EventRes } from '@uems/uemscommlib';
+import { EventMsgValidator, EventRes } from '@uems/uemscommlib';
 
 const fs = require('fs').promises;
 
@@ -30,7 +30,7 @@ export namespace Messaging {
 
         rcv_ch: Channel;
 
-        msg_validator: MessageValidator.MessageValidator;
+        msg_validator: EventMsgValidator;
 
         msg_callback: Function;
 
@@ -38,7 +38,7 @@ export namespace Messaging {
             conn: Connection,
             sendCh: Channel,
             rcvCh: Channel,
-            msgValidator: MessageValidator.MessageValidator,
+            msgValidator: EventMsgValidator,
             msgCallback: Function,
         ) {
             this.conn = conn;
@@ -87,7 +87,7 @@ export namespace Messaging {
             conn: Connection,
             msgCallback: Function,
             topics: [string],
-            msgValidator: MessageValidator.MessageValidator,
+            msgValidator: EventMsgValidator,
         ) {
             conn.on('error', (err: Error) => {
                 if (err.message !== 'Connection closing') {
@@ -148,10 +148,8 @@ export namespace Messaging {
             configPath: string,
             reqRecvCallback: Function,
             topics: [string],
-            schemaPath: string,
         ) {
-            const schema = JSON.parse((await fs.readFile(schemaPath)).toString());
-            const msgValidator = new MessageValidator.MessageValidator(schema);
+            const msgValidator = await EventMsgValidator.setup();
             console.log('Connecting to rabbitmq...');
             fs.readFile(configPath).then((data: Buffer) => {
                 const configJson: MqConfig = JSON.parse(data.toString());
