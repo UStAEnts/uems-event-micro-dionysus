@@ -8,7 +8,8 @@ const EVENT_DB = 'events';
 
 export namespace Database {
 
-    export type UemsEvent = { // Represents a UemsEvent being taken from the database.
+    // Represents a UemsEvent that has been retrieved from the database.
+    export type UemsEvent = {
         id: string,
         name: string,
         start_date: number,
@@ -16,6 +17,8 @@ export namespace Database {
         venue: string[]
     };
 
+    // Represents a query to the database for information.
+    // If all fields are undefined it indicates that all data should be returned.
     export type UemsQuery = {
         id?: string,
         name?: string,
@@ -24,26 +27,27 @@ export namespace Database {
         venue?: string[]
     };
 
+    // The result of an insert event request.
     export type InsertEventResult = {
         event_id?: string, // Event ID of the inserted event, only populated if ok.
         err_msg?: string // Error message, only populated if err.
     };
 
-    export class EventDetailsConnector {
+    // Represents the database connection to mongoDB and handles requests to the database.
+    export class DatabaseConnector {
         constructor(private db: MongoClient.Db) {
             this.db = db;
         }
 
+        // Retrieves data from the database matching the given query.
         async retrieveQuery(query: UemsQuery): Promise<Database.UemsEvent[]> {
-            console.log('Retrieve query: ');
-            console.log(query);
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             const res: UemsEvent[] = await collection.find(query).toArray();
             return res;
         }
 
-        /// Inserts the given event into the database.
-        /// Note that the ID of the event will be ignored as a new ID is generated on insertion.
+        // Inserts the given event into the database.
+        // Note that the ID of the event will be ignored as a new ID is generated on insertion.
         async insertEvent(content: UemsEvent): Promise<InsertEventResult> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             const res = await collection.insertOne(content);
@@ -63,6 +67,8 @@ export namespace Database {
             return ret;
         }
 
+        // Modifies the event with the given eventId to match the new values in newEvent.
+        // Returns true if successful, false if not.
         async findAndModifyEvent(eventId: string, newEvent: any): Promise<boolean> {
             // TODO, setup the database so changes are timestamped in a reversable way.
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
@@ -77,7 +83,8 @@ export namespace Database {
             return (res.result.ok !== undefined);
         }
 
-        // Return true if successful.
+        // Removes an event from the database.
+        // Returns true if successful, false if not.
         async removeEvent(eventId: string): Promise<boolean> {
             // TODO, setup the database so changes are timestamped in a reversable way.
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
@@ -91,14 +98,15 @@ export namespace Database {
         }
     }
 
-    export async function connect(uri: string): Promise<EventDetailsConnector> {
+    // Connects the datebase connect to the mongoDB database at the given uri.
+    export async function connect(uri: string): Promise<DatabaseConnector> {
         try {
             const client = await MongoClient.connect(uri, {
                 useNewUrlParser: true,
                 useUnifiedTopology: true,
             });
 
-            return new EventDetailsConnector(client.db(EVENT_DB));
+            return new DatabaseConnector(client.db(EVENT_DB));
         } catch (e) {
             console.log('failed to connect to the database', e);
             throw e;

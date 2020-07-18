@@ -1,5 +1,5 @@
-import { Database } from './EventDetailsConnector';
-import { Messaging } from './messaging';
+import { Database } from './DatabaseConnector';
+import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
 import express = require('express');
 import cookieParser = require('cookie-parser');
@@ -16,7 +16,7 @@ const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
 
 export const app = express();
 
-let eventsDb: Database.EventDetailsConnector | null = null;
+let eventsDb: Database.DatabaseConnector | null = null;
 
 // /**
 //  * Handles errors raised by the given function (wrapped in a promise) which will handle it by passing it to the next
@@ -63,7 +63,7 @@ async function handleUnsupportedOp(content: any): Promise<EventRes.RequestRespon
 }
 
 async function handleAddReq(
-    db: Database.EventDetailsConnector,
+    db: Database.DatabaseConnector,
     content: EventMsg.CreateEventMsg,
 ): Promise<EventRes.RequestResponseMsg | null> {
     const event: Database.UemsEvent = {
@@ -97,7 +97,7 @@ async function handleAddReq(
 }
 
 async function handleQueryReq(
-    db: Database.EventDetailsConnector,
+    db: Database.DatabaseConnector,
     content: EventMsg.ReadEventMsg,
 ): Promise<EventRes.ReadRequestResponseMsg | null> {
     const query = generateQuery(content);
@@ -124,7 +124,7 @@ async function handleQueryReq(
 }
 
 async function handleModifyReq(
-    db: Database.EventDetailsConnector,
+    db: Database.DatabaseConnector,
     content: EventMsg.UpdateEventMsg,
 ): Promise<EventRes.RequestResponseMsg | null> {
     // TODO, treating events as immutable with version controlled/timestamped modifications.
@@ -157,7 +157,7 @@ async function handleModifyReq(
 }
 
 async function handleDeleteReq(
-    db: Database.EventDetailsConnector,
+    db: Database.DatabaseConnector,
     content: EventMsg.DeleteEventMsg,
 ): Promise<EventRes.RequestResponseMsg | null> {
     // TODO, treating events as immutable with version controlled/timestamped modifications.
@@ -209,7 +209,7 @@ async function reqReceived(
  * the express app
  * @param eventsConnection the resolved database object
  */
-async function databaseConnectionReady(eventsConnection: Database.EventDetailsConnector) {
+async function databaseConnectionReady(eventsConnection: Database.DatabaseConnector) {
     console.log('database connection is ready');
 
     eventsDb = eventsConnection;

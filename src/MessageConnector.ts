@@ -20,18 +20,24 @@ const GATEWAY_EXCHANGE: string = 'gateway';
 // The exchange used for receiving requests to microservices.
 const REQUEST_EXCHANGE: string = 'request';
 
+// The timeout (milliseconds) used before retrying a connection to rabbitMQ.
+const RABBIT_MQ_RETRY_TIMEOUT: number = 2000;
+
 export namespace Messaging {
     export class Messenger {
         // Connection to the RabbitMQ messaging system.
         conn: Connection;
 
-        // Channel for sending messages out to the microservices and receiving them back as a response.
+        // Channel for sending responses to requests.
         send_ch: Channel;
 
+        // Channel for receiving requests.
         rcv_ch: Channel;
 
+        // Checks incoming message is valid with respect to event msg schema.
         msg_validator: EventMsgValidator;
 
+        // The function called when a request is received (after checking for valid schema).
         msg_callback: Function;
 
         private constructor(
@@ -48,15 +54,13 @@ export namespace Messaging {
             this.msg_callback = msgCallback;
         }
 
+        // Called when a message/request is received.
         async handleMsg(msg: Message | null) {
             if (msg == null) {
                 return;
             }
 
             const contentJson = JSON.parse(JSON.parse(msg.content.toString()));
-
-            console.log('Msg received');
-            console.log(contentJson);
 
             if (!(await this.msg_validator.validate(contentJson))) {
                 // Messages not compliant with the schema are dropped.
@@ -139,6 +143,8 @@ export namespace Messaging {
             console.log('Connecting to rabbitmq...');
             const data = await fs.readFile(configPath);
             const configJson: MqConfig = JSON.parse(data.toString());
+            // Loops to allow retrying multiple times without having to reload the config.
+            // eslint-disable-next-line no-constant-condition
             while (true) {
                 try {
                     // no-await-in-loop: used to retry an action, ignored as per
@@ -155,8 +161,9 @@ export namespace Messaging {
                 } catch (e) {
                     console.error('Failed to connect to rabbit mq');
 
+                    // This forces a timeout before retrying connection.
                     // eslint-disable-next-line no-await-in-loop
-                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                    await new Promise((resolve) => setTimeout(resolve, RABBIT_MQ_RETRY_TIMEOUT));
                     console.log('Attempting to reconnect to RabbitMQ....');
                 }
             }
