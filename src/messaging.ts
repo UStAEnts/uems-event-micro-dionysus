@@ -141,12 +141,13 @@ export namespace Messaging {
             const configJson: MqConfig = JSON.parse(data.toString());
             while (true) {
                 try {
-                    // no-await-in-loop: used to retry an action, ignored as per https://eslint.org/docs/rules/no-await-in-loop
+                    // no-await-in-loop: used to retry an action, ignored as per
+                    // https://eslint.org/docs/rules/no-await-in-loop
                     // eslint-disable-next-line no-await-in-loop
                     const res = await amqpConnect(`${configJson.uri}?heartbeat=60`).then(
                         (conn: Connection) => {
                             Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator).then(
-                                (messenger: Messenger) => { return messenger; },
+                                (messenger: Messenger) => messenger,
                             );
                         },
                     );
