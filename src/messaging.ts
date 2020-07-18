@@ -1,6 +1,6 @@
 import {
     Channel, connect as amqpConnect, Connection, Message,
-} from 'amqplib/callback_api';
+} from 'amqplib';
 
 import { EventMsgValidator, EventRes } from '@uems/uemscommlib';
 
@@ -55,6 +55,9 @@ export namespace Messaging {
 
             const contentJson = JSON.parse(JSON.parse(msg.content.toString()));
 
+            console.log('Msg received');
+            console.log(contentJson);
+
             if (!(await this.msg_validator.validate(contentJson))) {
                 // Messages not compliant with the schema are dropped.
                 console.log('Message Dropped: Not Schema Compliant');
@@ -99,45 +102,28 @@ export namespace Messaging {
             });
             console.log('[AMQP] connected');
 
-            return new Promise<Messenger>(((resolve, reject) => {
-                conn.createChannel((err1: Error, sendCh: Channel) => {
-                    if (err1) {
-                        reject(err1);
-                    }
-                    sendCh.assertExchange(GATEWAY_EXCHANGE, 'direct');
+            const sendCh = await conn.createChannel();
+            await sendCh.assertExchange(GATEWAY_EXCHANGE, 'direct');
+            const rcvCh = await conn.createChannel();
+            await rcvCh.assertExchange(REQUEST_EXCHANGE, 'topic', {
+                durable: false,
+            });
+            const queue = await rcvCh.assertQueue(RCV_INBOX_QUEUE_NAME, {
+                // Exclusive false as there may be multiple instances of this microservice sharing the queue
+                exclusive: false,
+            });
 
-                    conn.createChannel((err2: Error, rcvCh: Channel) => {
-                        if (err2) {
-                            reject(err2);
-                        }
+            topics.forEach((topic) => {
+                rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
+            });
 
-                        rcvCh.assertExchange(REQUEST_EXCHANGE, 'topic', {
-                            durable: false,
-                        });
+            const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidator, msgCallback);
 
-                        rcvCh.assertQueue(RCV_INBOX_QUEUE_NAME, {
-                            // Exclusive false as there may be multiple instances of this microservice sharing the queue
-                            exclusive: false,
-                        }, (err3: Error, queue) => {
-                            if (err3) {
-                                reject(err3);
-                            }
+            rcvCh.consume(queue.queue, async (msg) => {
+                await messenger.handleMsg(msg);
+            }, { noAck: true });
 
-                            topics.forEach((topic) => {
-                                rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
-                            });
-
-                            const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidator, msgCallback);
-
-                            rcvCh.consume(queue.queue, async (msg) => {
-                                await messenger.handleMsg(msg);
-                            }, { noAck: true });
-
-                            resolve(messenger);
-                        });
-                    });
-                });
-            }));
+            return messenger;
         }
 
         // Creates a new Messager to be used by the microservice for communication including receiving requests and
@@ -151,16 +137,28 @@ export namespace Messaging {
         ) {
             const msgValidator = await EventMsgValidator.setup();
             console.log('Connecting to rabbitmq...');
-            fs.readFile(configPath).then((data: Buffer) => {
-                const configJson: MqConfig = JSON.parse(data.toString());
-                amqpConnect(`${configJson.uri}?heartbeat=60`, async (err: Error, conn: Connection) => {
-                    if (err) {
-                        console.error('[AMQP]', err.message);
-                        return err;
-                    }
-                    return Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator);
-                });
-            });
+            const data = await fs.readFile(configPath);
+            const configJson: MqConfig = JSON.parse(data.toString());
+            while (true) {
+                try {
+                    // no-await-in-loop: used to retry an action, ignored as per https://eslint.org/docs/rules/no-await-in-loop
+                    // eslint-disable-next-line no-await-in-loop
+                    const res = await amqpConnect(`${configJson.uri}?heartbeat=60`).then(
+                        (conn: Connection) => {
+                            Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator).then(
+                                (messenger: Messenger) => { return messenger; },
+                            );
+                        },
+                    );
+                    return res;
+                } catch (e) {
+                    console.error('Failed to connect to rabbit mq');
+
+                    // eslint-disable-next-line no-await-in-loop
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                    console.log('Attempting to reconnect to RabbitMQ....');
+                }
+            }
         }
     }
 }

@@ -14,6 +14,8 @@ const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
 // The path to the rabbitMQ config which is used to connect to the messaging system.
 const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
 
+export const app = express();
+
 let eventsDb: Database.EventDetailsConnector | null = null;
 
 // /**
@@ -213,19 +215,6 @@ async function reqReceived(
     }
 }
 
-console.log('Starting event micro dionysus...');
-
-export const app = express();
-
-app.set('port', process.env.PORT || 15550);
-
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({
-    extended: false,
-}));
-app.use(cookieParser());
-
 /**
  * Callback for the database being prepared. Will set events db instance and make the app listen on the port defined in
  * the express app
@@ -236,38 +225,21 @@ async function databaseConnectionReady(eventsConnection: Database.EventDetailsCo
 
     eventsDb = eventsConnection;
 
-    // Repeatedly attempt to connect to RabbitMQ messaging system.
-    while (true) {
-        try {
-            // no-await-in-loop: used to retry an action, ignored as per https://eslint.org/docs/rules/no-await-in-loop
-            // eslint-disable-next-line no-await-in-loop
-            await Messaging.Messenger.setup(
-                RABBIT_MQ_CONFIG_PATH,
-                reqReceived,
-                [EVENT_DETAILS_SERVICE_TOPIC],
-            );
-            break;
-        } catch (err) {
-            console.log('Attempting to reconnect to RabbitMQ....');
-
-            // no-await-in-loop: used to retry an action, ignored as per https://eslint.org/docs/rules/no-await-in-loop
-            // eslint-disable-next-line no-await-in-loop
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-        }
-    }
+    await Messaging.Messenger.setup(
+        RABBIT_MQ_CONFIG_PATH,
+        reqReceived,
+        [EVENT_DETAILS_SERVICE_TOPIC],
+    );
 
     app.listen(process.env.PORT, () => {
         console.log('Event micro dionysus started successfully');
     });
 }
 
-// Start of the mongoDB connection.
-// The connection info (including username / password) is read from configuration file.
-fs.readFile('database.json', { encoding: 'utf-8' }, (err: any, data: any) => {
-    if (err) {
-        console.error('Failed to read database.json file... database connection failed...');
-        return;
-    }
+async function setup() {
+    // Start of the mongoDB connection.
+    // The connection info (including username / password) is read from configuration file.
+    const data = await fs.readFile('database.json', { encoding: 'utf-8' });
 
     console.log('Database.json file opened successfully...');
 
@@ -278,4 +250,17 @@ fs.readFile('database.json', { encoding: 'utf-8' }, (err: any, data: any) => {
         console.error(e.message);
         process.exit(1);
     });
-});
+}
+
+console.log('Starting event micro dionysus...');
+
+app.set('port', process.env.PORT || 15550);
+
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({
+    extended: false,
+}));
+app.use(cookieParser());
+
+setup();
