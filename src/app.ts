@@ -6,7 +6,7 @@ import cookieParser = require('cookie-parser');
 
 const fs = require('fs').promises;
 
-import { EventRes } from '@uems/uemscommlib';
+import { EventRes, EventMsg } from '@uems/uemscommlib';
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
@@ -29,28 +29,28 @@ let eventsDb: Database.EventDetailsConnector | null = null;
 // });
 
 // TODO, remove :any usage.
-function generateQuery(content: any): any {
+function generateQuery(content: EventMsg.ReadEventMsg): Database.UemsQuery {
     const query = {};
 
     // There is probably a better way to do this - maybe a content.map(|v| if (v.isEmpty()){remove(v)}) type thing.
-    if (content.name !== undefined) {
-        Object.assign(query, { name: content.name });
+    if (content.event_name !== undefined) {
+        Object.assign(query, { name: content.event_name });
     }
 
-    if (content.start_date_before !== undefined) {
-        Object.assign(query, { start_date_before: content.start_date_before });
+    if (content.event_start_date_range_begin !== undefined) {
+        Object.assign(query, { start_date_before: content.event_start_date_range_begin });
     }
 
-    if (content.start_date_after !== undefined) {
-        Object.assign(query, { start_date_after: content.start_date_after });
+    if (content.event_start_date_range_end !== undefined) {
+        Object.assign(query, { start_date_after: content.event_start_date_range_end });
     }
 
-    if (content.end_date_before !== undefined) {
-        Object.assign(query, { end_date_before: content.end_date_before });
+    if (content.event_end_date_range_begin !== undefined) {
+        Object.assign(query, { end_date_before: content.event_end_date_range_begin });
     }
 
-    if (content.end_date_after !== undefined) {
-        Object.assign(query, { end_date_after: content.end_date_after });
+    if (content.event_end_date_range_end !== undefined) {
+        Object.assign(query, { end_date_after: content.event_end_date_range_end });
     }
 
     return query;
@@ -62,51 +62,43 @@ async function handleUnsupportedOp(content: any): Promise<EventRes.RequestRespon
     return null;
 }
 
-// Extracts the event out of an event message.
-function extractEvent(content: any) {
-    if (content.name === undefined || content.start_date === undefined
-        || content.end_date === undefined || content.venue === undefined) {
-        // TODO, verification that the event doesn't already exist, that the event is valid.
-        // This is far from real 'verification'.
-        // TODO, checking venue exists.
-        console.error('Event to insert missing required parts - dropped');
-        console.log(content);
-        return null;
+async function handleAddReq(
+    db: Database.EventDetailsConnector,
+    content: EventMsg.CreateEventMsg,
+): Promise<EventRes.RequestResponseMsg | null> {
+    const event: Database.UemsEvent = {
+        id: '0', // Placeholder.
+        name: content.event_name,
+        start_date: content.event_start_date,
+        end_date: content.event_end_date,
+        venue: content.venue_ids,
+    };
+
+    // TODO, proper event checks.
+    if (event == null) { return null; }
+
+    const result: Database.InsertEventResult = await db.insertEvent(event);
+
+    if (result.event_id !== undefined) {
+        return {
+            msg_id: content.msg_id,
+            status: EventRes.MsgStatus.SUCCESS,
+            msg_intention: content.msg_intention,
+            result: [result.event_id],
+        };
     }
 
     return {
-        name: content.name,
-        // Date timestamp is set in milliseconds but communicated in seconds.
-        start_date: new Date(parseFloat(content.start_date) * 1000),
-        end_date: new Date(parseFloat(content.end_date) * 1000),
-        venue: content.venue,
-    };
-}
-
-async function handleAddReq(
-    db: Database.EventDetailsConnector,
-    content: any,
-): Promise<EventRes.RequestResponseMsg | null> {
-    const event = extractEvent(content);
-
-    // TODO, proper event rejection.
-    if (event == null) { return null; }
-
-    const result = await db.insertEvent(event);
-
-    const msg: EventRes.RequestResponseMsg = {
         msg_id: content.msg_id,
-        status: (result ? EventRes.MsgStatus.SUCCESS : EventRes.MsgStatus.FAIL),
+        status: EventRes.MsgStatus.FAIL,
         msg_intention: content.msg_intention,
-        result: [content.event_id],
+        result: [result.err_msg === undefined ? '' : result.err_msg],
     };
-
-    return msg;
 }
 
 async function handleQueryReq(
     db: Database.EventDetailsConnector,
-    content: any,
+    content: EventMsg.ReadEventMsg,
 ): Promise<EventRes.ReadRequestResponseMsg | null> {
     const query = generateQuery(content);
 
@@ -133,9 +125,8 @@ async function handleQueryReq(
 
 async function handleModifyReq(
     db: Database.EventDetailsConnector,
-    content: any,
+    content: EventMsg.UpdateEventMsg,
 ): Promise<EventRes.RequestResponseMsg | null> {
-    // TODO find and update only part of the event.
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
     //          have an inconsistent view of the event.
@@ -145,9 +136,13 @@ async function handleModifyReq(
         return null;
     }
 
-    const newEvent = extractEvent(content);
-
-    console.log(`New event start date: ${newEvent?.start_date}`);
+    const newEvent = {
+        id: content.event_id, // Placeholder.
+        name: content.event_name,
+        start_date: content.event_start_date,
+        end_date: content.event_end_date,
+        venue: content.venue_ids,
+    };
 
     const result = await db.findAndModifyEvent(content.event_id, newEvent);
 
@@ -163,7 +158,7 @@ async function handleModifyReq(
 
 async function handleDeleteReq(
     db: Database.EventDetailsConnector,
-    content: any,
+    content: EventMsg.DeleteEventMsg,
 ): Promise<EventRes.RequestResponseMsg | null> {
     // TODO, treating events as immutable with version controlled/timestamped modifications.
     // TODO, some check for mutual exclusion / checking an event isn't modified in such a way that 2 clients
@@ -201,17 +196,11 @@ async function reqReceived(
     }
 
     switch (content.msg_intention) {
-        case 'READ':
-            return handleQueryReq(eventsDb, content);
-        case 'CREATE':
-            return handleAddReq(eventsDb, content);
-        case 'UPDATE':
-            return handleModifyReq(eventsDb, content);
-        case 'DELETE':
-            return handleDeleteReq(eventsDb, content);
-        default:
-            console.log(content);
-            return handleUnsupportedOp(content);
+        case 'READ': return handleQueryReq(eventsDb, content);
+        case 'CREATE': return handleAddReq(eventsDb, content);
+        case 'UPDATE': return handleModifyReq(eventsDb, content);
+        case 'DELETE': return handleDeleteReq(eventsDb, content);
+        default: return handleUnsupportedOp(content);
     }
 }
 

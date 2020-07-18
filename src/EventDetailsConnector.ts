@@ -8,31 +8,62 @@ const EVENT_DB = 'events';
 
 export namespace Database {
 
-    export type UemsEvent = {
+    export type UemsEvent = { // Represents a UemsEvent being taken from the database.
         id: string,
         name: string,
-        start_date: Number, // dates in seconds since epoch
-        end_date: Number
+        start_date: number,
+        end_date: number,
+        venue: string[]
+    };
+
+    export type UemsQuery = {
+        id?: string,
+        name?: string,
+        start_date?: number,
+        end_date?: number,
+        venue?: string[]
+    };
+
+    export type InsertEventResult = {
+        event_id?: string, // Event ID of the inserted event, only populated if ok.
+        err_msg?: string // Error message, only populated if err.
     };
 
     export class EventDetailsConnector {
         constructor(private db: MongoClient.Db) {
+            this.db = db;
         }
 
-        async retrieveQuery(query: {}): Promise<Database.UemsEvent[]> {
+        async retrieveQuery(query: UemsQuery): Promise<Database.UemsEvent[]> {
+            console.log('Retrieve query: ');
+            console.log(query);
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             const res: UemsEvent[] = await collection.find(query).toArray();
             return res;
         }
 
-        async insertEvent(content: any): Promise<boolean> {
+        /// Inserts the given event into the database.
+        /// Note that the ID of the event will be ignored as a new ID is generated on insertion.
+        async insertEvent(content: UemsEvent): Promise<InsertEventResult> {
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             const res = await collection.insertOne(content);
 
-            return (res.result.ok !== undefined);
+            let ret: InsertEventResult;
+
+            if (res.result !== undefined) {
+                ret = {
+                    event_id: res.insertedId,
+                };
+            } else {
+                ret = {
+                    err_msg: 'Database failed to insert event',
+                };
+            }
+
+            return ret;
         }
 
-        async findAndModifyEvent(eventId: number, newEvent: any): Promise<boolean> {
+        async findAndModifyEvent(eventId: string, newEvent: any): Promise<boolean> {
             // TODO, setup the database so changes are timestamped in a reversable way.
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
 
@@ -47,7 +78,7 @@ export namespace Database {
         }
 
         // Return true if successful.
-        async removeEvent(eventId: number): Promise<boolean> {
+        async removeEvent(eventId: string): Promise<boolean> {
             // TODO, setup the database so changes are timestamped in a reversable way.
             const collection = this.db.collection(EVENT_DETAILS_COLLECTION);
             const res: MongoClient.DeleteWriteOpResultObject = await collection.deleteOne(
