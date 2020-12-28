@@ -1,3 +1,15 @@
 {
-    "uri": "mongodb://root:example@mongo:27017/event-details?authMechanism=SCRAM-SHA-1&authSource=admin"
+    "uri": "mongodb://mongo:27017/event-details",
+    "auth": {
+        "user": "root",
+        "password": "example"
+    },
+    "mapping": {
+        "event": "events",
+        "ent": "ent_states"
+    },
+    "options": {
+        "authMechanism": "SCRAM-SHA-1",
+        "authSource": "admin"
+    }
 }
