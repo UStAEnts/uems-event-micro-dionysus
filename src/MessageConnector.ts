@@ -60,7 +60,7 @@ export namespace Messaging {
                 return;
             }
 
-            const contentJson = JSON.parse(JSON.parse(msg.content.toString()));
+            const contentJson = JSON.parse(msg.content.toString());
 
             if (!(await this.msg_validator.validate(contentJson))) {
                 // Messages not compliant with the schema are dropped.
@@ -77,7 +77,7 @@ export namespace Messaging {
                 return;
             }
 
-            Messaging.Messenger.sendResponse(res, this.send_ch);
+            await Messaging.Messenger.sendResponse(res, this.send_ch);
         }
 
         // Once a request has been handled and the response returned this method takes that request message and the
