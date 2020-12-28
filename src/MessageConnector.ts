@@ -3,6 +3,7 @@ import {
 } from 'amqplib';
 
 import { EventMsgValidator, EventRes } from '@uems/uemscommlib';
+import { MessageValidator } from "@uems/uemscommlib/build/messaging/MessageValidator";
 
 const fs = require('fs').promises;
 
@@ -35,7 +36,7 @@ export namespace Messaging {
         rcv_ch: Channel;
 
         // Checks incoming message is valid with respect to event msg schema.
-        msg_validator: EventMsgValidator;
+        msgValidators: MessageValidator[];
 
         // The function called when a request is received (after checking for valid schema).
         msg_callback: Function;
@@ -44,13 +45,13 @@ export namespace Messaging {
             conn: Connection,
             sendCh: Channel,
             rcvCh: Channel,
-            msgValidator: EventMsgValidator,
+            msgValidators: MessageValidator[],
             msgCallback: Function,
         ) {
             this.conn = conn;
             this.send_ch = sendCh;
             this.rcv_ch = rcvCh;
-            this.msg_validator = msgValidator;
+            this.msgValidators = msgValidators;
             this.msg_callback = msgCallback;
         }
 
@@ -62,15 +63,19 @@ export namespace Messaging {
 
             const contentJson = JSON.parse(msg.content.toString());
 
-            if (!(await this.msg_validator.validate(contentJson))) {
+            const passesValidation = (await Promise.all(
+                // Run the message against all validators and then reduce the result
+                this.msgValidators.map((validator) => validator.validate(contentJson)),
+            )).reduce((a, b) => a || b);
+
+            if (!passesValidation) {
                 // Messages not compliant with the schema are dropped.
                 console.log('Message Dropped: Not Schema Compliant');
                 return;
             }
 
-            const res: EventRes.ReadRequestResponseMsg |
-            EventRes.RequestResponseMsg |
-            null = await this.msg_callback(contentJson);
+            const res: EventRes.ReadRequestResponseMsg | EventRes.RequestResponseMsg | null
+                = await this.msg_callback(contentJson);
 
             if (res == null) {
                 // A null response indicates no response.
@@ -94,7 +99,7 @@ export namespace Messaging {
             conn: Connection,
             msgCallback: Function,
             topics: [string],
-            msgValidator: EventMsgValidator,
+            msgValidators: MessageValidator[],
         ) {
             conn.on('error', (err: Error) => {
                 if (err.message !== 'Connection closing') {
@@ -121,9 +126,10 @@ export namespace Messaging {
                 rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
             });
 
-            const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidator, msgCallback);
+            const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidators, msgCallback);
 
             rcvCh.consume(queue.queue, async (msg) => {
+                console.log(msg);
                 await messenger.handleMsg(msg);
             }, { noAck: true });
 
@@ -150,13 +156,15 @@ export namespace Messaging {
                     // no-await-in-loop: used to retry an action, ignored as per
                     // https://eslint.org/docs/rules/no-await-in-loop
                     // eslint-disable-next-line no-await-in-loop
-                    const res = await amqpConnect(`${configJson.uri}?heartbeat=60`).then(
-                        (conn: Connection) => {
-                            Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator).then(
-                                (messenger: Messenger) => messenger,
-                            );
-                        },
-                    );
+                    const res = await amqpConnect(`${configJson.uri}?heartbeat=60`)
+                        .then(
+                            (conn: Connection) => {
+                                Messenger.configureConnection(conn, reqRecvCallback, topics, [msgValidator])
+                                    .then(
+                                        (messenger: Messenger) => messenger,
+                                    );
+                            },
+                        );
                     return res;
                 } catch (e) {
                     console.error('Failed to connect to rabbit mq');
