@@ -2,7 +2,7 @@ import {
     Channel, connect as amqpConnect, Connection, Message,
 } from 'amqplib';
 
-import { EventMsgValidator, EventRes } from '@uems/uemscommlib';
+import { EventMsgValidator, EventRes, EntStateResponse } from '@uems/uemscommlib';
 import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
 
 const fs = require('fs').promises;
@@ -25,6 +25,12 @@ const REQUEST_EXCHANGE: string = 'request';
 const RABBIT_MQ_RETRY_TIMEOUT: number = 2000;
 
 export namespace Messaging {
+    type MessageResponses = EventRes.ReadRequestResponseMsg
+        | EventRes.RequestResponseMsg
+        | EntStateResponse.EntStateReadResponseMessage
+        | EntStateResponse.EntStateResponseMessage;
+    type MessageHandler = (routingKey: string, message: any) => MessageResponses | null;
+
     export class Messenger {
         // Connection to the RabbitMQ messaging system.
         conn: Connection;
@@ -39,14 +45,14 @@ export namespace Messaging {
         msgValidators: MessageValidator[];
 
         // The function called when a request is received (after checking for valid schema).
-        msg_callback: Function;
+        msg_callback: MessageHandler;
 
         private constructor(
             conn: Connection,
             sendCh: Channel,
             rcvCh: Channel,
             msgValidators: MessageValidator[],
-            msgCallback: Function,
+            msgCallback: MessageHandler,
         ) {
             this.conn = conn;
             this.send_ch = sendCh;
@@ -74,8 +80,7 @@ export namespace Messaging {
                 return;
             }
 
-            const res: EventRes.ReadRequestResponseMsg | EventRes.RequestResponseMsg | null
-                = await this.msg_callback(contentJson);
+            const res: MessageResponses | null = await this.msg_callback(msg.fields.routingKey, contentJson);
 
             if (res == null) {
                 // A null response indicates no response.
@@ -87,7 +92,7 @@ export namespace Messaging {
 
         // Once a request has been handled and the response returned this method takes that request message and the
         // response message content to generate and send the response message.
-        static async sendResponse(res: EventRes.RequestResponseMsg | EventRes.ReadRequestResponseMsg, sendCh: Channel) {
+        static async sendResponse(res: MessageResponses, sendCh: Channel) {
             sendCh.publish(GATEWAY_EXCHANGE, '', Buffer.from(JSON.stringify(res)));
         }
 
@@ -97,7 +102,7 @@ export namespace Messaging {
         // If the callback resolves to null then no response is sent.
         static async configureConnection(
             conn: Connection,
-            msgCallback: Function,
+            msgCallback: MessageHandler,
             topics: string[],
             msgValidators: MessageValidator[],
         ) {
@@ -142,7 +147,7 @@ export namespace Messaging {
         // object.
         static async setup(
             configPath: string,
-            reqRecvCallback: Function,
+            reqRecvCallback: MessageHandler,
             topics: string[],
         ) {
             const msgValidator = await EventMsgValidator.setup();
