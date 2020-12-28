@@ -14,6 +14,7 @@ import DatabaseConnections = Database.DatabaseConnections;
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
+const ENT_STATE_DETAILS_SERVICE_TOPIC: string = 'ents.details.*';
 
 // The path to the rabbitMQ config which is used to connect to the messaging system.
 const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
@@ -73,7 +74,7 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     await Messaging.Messenger.setup(
         RABBIT_MQ_CONFIG_PATH,
         reqReceived,
-        [EVENT_DETAILS_SERVICE_TOPIC],
+        [EVENT_DETAILS_SERVICE_TOPIC, ENT_STATE_DETAILS_SERVICE_TOPIC],
     );
 
     app.listen(process.env.PORT, () => {
