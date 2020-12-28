@@ -3,7 +3,7 @@ import {
 } from 'amqplib';
 
 import { EventMsgValidator, EventRes } from '@uems/uemscommlib';
-import { MessageValidator } from "@uems/uemscommlib/build/messaging/MessageValidator";
+import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
 
 const fs = require('fs').promises;
 

@@ -8,8 +8,8 @@ const fs = require('fs').promises;
 
 import { EventRes } from '@uems/uemscommlib';
 import { EventInterface } from './database/interface/EventInterface';
-import { EventDatabaseInterface } from "./database/type/impl/EventDatabaseInterface";
-import { EntStateDatabaseInterface } from "./database/type/impl/EntStateDatabaseInterface";
+import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
+import { EntStateDatabaseInterface } from './database/type/impl/EntStateDatabaseInterface';
 import DatabaseConnections = Database.DatabaseConnections;
 
 // The topic used for messages destined to microservices of this type.
