@@ -98,7 +98,7 @@ export namespace Messaging {
         static async configureConnection(
             conn: Connection,
             msgCallback: Function,
-            topics: [string],
+            topics: string[],
             msgValidators: MessageValidator[],
         ) {
             conn.on('error', (err: Error) => {
@@ -143,7 +143,7 @@ export namespace Messaging {
         static async setup(
             configPath: string,
             reqRecvCallback: Function,
-            topics: [string],
+            topics: string[],
         ) {
             const msgValidator = await EventMsgValidator.setup();
             console.log('Connecting to rabbitmq...');
