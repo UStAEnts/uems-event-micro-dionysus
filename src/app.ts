@@ -11,6 +11,8 @@ import { EventInterface } from './database/interface/EventInterface';
 import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
 import { EntStateDatabaseInterface } from './database/type/impl/EntStateDatabaseInterface';
 import DatabaseConnections = Database.DatabaseConnections;
+import MessageResponses = Messaging.MessageResponses;
+import { EntStateInterface } from './database/interface/EntStateInterface';
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
@@ -25,6 +27,7 @@ let eventDB: EventDatabaseInterface | null = null;
 let stateDB: EntStateDatabaseInterface | null = null;
 
 let eventInterface: EventInterface | null = null;
+let stateInterface: EntStateInterface | null = null;
 
 async function handleUnsupportedOp(content: any): Promise<EventRes.RequestResponseMsg | null> {
     console.error('Unsupported operation: ');
@@ -33,30 +36,58 @@ async function handleUnsupportedOp(content: any): Promise<EventRes.RequestRespon
 }
 
 async function reqReceived(
+    routingKey: string,
     content: any,
-): Promise<EventRes.RequestResponseMsg | EventRes.ReadRequestResponseMsg | null> {
+): Promise<MessageResponses | null> {
     // TODO: checks for message integrity.
 
-    if (content == null || eventDB == null || eventInterface == null) {
-        // Blank (null content) messages are ignored.
-        // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
+    if (routingKey && routingKey.startsWith('event.')) {
+        if (content == null || eventDB == null || eventInterface == null) {
+            // Blank (null content) messages are ignored.
+            // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
 
-        console.log('Message content null or DB not ready!, message dropped');
-        return null;
+            console.log('Message content null or DB not ready!, message dropped');
+            return null;
+        }
+
+        switch (content.msg_intention) {
+            case 'READ':
+                return eventInterface.read(content);
+            case 'CREATE':
+                return eventInterface.create(content);
+            case 'UPDATE':
+                return eventInterface.modify(content);
+            case 'DELETE':
+                return eventInterface.delete(content);
+            default:
+                return handleUnsupportedOp(content);
+        }
     }
 
-    switch (content.msg_intention) {
-        case 'READ':
-            return eventInterface.read(content);
-        case 'CREATE':
-            return eventInterface.create(content);
-        case 'UPDATE':
-            return eventInterface.modify(content);
-        case 'DELETE':
-            return eventInterface.delete(content);
-        default:
-            return handleUnsupportedOp(content);
+    if (routingKey && routingKey.startsWith('ent.')) {
+        if (content == null || stateDB == null || stateInterface == null) {
+            // Blank (null content) messages are ignored.
+            // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
+
+            console.log('Message content null or DB not ready!, message dropped');
+            return null;
+        }
+
+        switch (content.msg_intention) {
+            case 'READ':
+                return stateInterface.read(content);
+            case 'CREATE':
+                return stateInterface.create(content);
+            case 'UPDATE':
+                return stateInterface.modify(content);
+            case 'DELETE':
+                return stateInterface.delete(content);
+            default:
+                return handleUnsupportedOp(content);
+        }
     }
+
+    return null;
 }
 
 /**
@@ -70,6 +101,7 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     eventDB = eventsConnection.event;
     stateDB = eventsConnection.ent;
     eventInterface = new EventInterface(eventDB);
+    stateInterface = new EntStateInterface(stateDB);
 
     await Messaging.Messenger.setup(
         RABBIT_MQ_CONFIG_PATH,
