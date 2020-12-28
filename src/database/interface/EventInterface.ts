@@ -3,7 +3,12 @@ import { CreateEventMsg, DeleteEventMsg, ReadEventMsg, UpdateEventMsg, } from '@
 import { InternalEvent, MsgIntention, MsgStatus, ReadRequestResponseMsg, RequestResponseMsg, } from '@uems/uemscommlib/build/messaging/types/event_response_schema';
 import { Event, EventDatabaseInterface, EventQuery } from '../type/impl/EventDatabaseInterface';
 
-export class EventInterface implements DataHandlerInterface<ReadEventMsg, CreateEventMsg, UpdateEventMsg, DeleteEventMsg> {
+export class EventInterface implements DataHandlerInterface<ReadEventMsg,
+    CreateEventMsg,
+    UpdateEventMsg,
+    DeleteEventMsg,
+    RequestResponseMsg,
+    ReadRequestResponseMsg> {
 
     protected _db: EventDatabaseInterface;
 
