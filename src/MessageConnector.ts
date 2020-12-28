@@ -25,11 +25,12 @@ const REQUEST_EXCHANGE: string = 'request';
 const RABBIT_MQ_RETRY_TIMEOUT: number = 2000;
 
 export namespace Messaging {
-    type MessageResponses = EventRes.ReadRequestResponseMsg
+    export type MessageResponses = EventRes.ReadRequestResponseMsg
         | EventRes.RequestResponseMsg
         | EntStateResponse.EntStateReadResponseMessage
         | EntStateResponse.EntStateResponseMessage;
-    type MessageHandler = (routingKey: string, message: any) => MessageResponses | null;
+    type MessageHandler = (routingKey: string, message: any) => (MessageResponses | null)
+        | Promise<MessageResponses | null>;
 
     export class Messenger {
         // Connection to the RabbitMQ messaging system.
