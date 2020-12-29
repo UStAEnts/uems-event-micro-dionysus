@@ -8,6 +8,7 @@ import UpdateEntStateMessage = EntStateMessage.UpdateEntStateMessage;
 import DeleteEntStateMessage = EntStateMessage.DeleteEntStateMessage;
 import EntStateResponseMessage = EntStateResponse.EntStateResponseMessage;
 import EntStateReadResponseMessage = EntStateResponse.EntStateReadResponseMessage;
+import { ObjectID } from "mongodb";
 
 export class EntStateInterface implements DataHandlerInterface<ReadEntStateMessage,
     CreateEntStateMessage,
@@ -23,12 +24,18 @@ export class EntStateInterface implements DataHandlerInterface<ReadEntStateMessa
     }
 
     private static convertReadRequestToDatabaseQuery(request: ReadEntStateMessage): EntStateQuery {
-        return {
+        const obj: any = {
             color: request.color,
             icon: request.icon,
-            id: request.id,
             name: request.name,
         };
+
+        if (request.id) {
+            obj._id = new ObjectID(request.id);
+        }
+
+        return Object.fromEntries(Object.entries(obj)
+            .filter(([, value]) => value !== undefined));
     }
 
     async create(request: EntStateMessage.CreateEntStateMessage): Promise<EntStateResponseMessage> {
@@ -95,11 +102,13 @@ export class EntStateInterface implements DataHandlerInterface<ReadEntStateMessa
             };
         }
 
-        const result = await this._db.modify(request.id, {
-            name: request.name,
-            icon: request.icon,
-            color: request.color,
-        });
+        const updated: Partial<EntState> = {};
+
+        if (request.name) updated.name = request.name;
+        if (request.icon) updated.icon = request.icon;
+        if (request.color) updated.color = request.color;
+
+        const result = await this._db.modify(request.id, updated);
 
         return {
             msg_id: request.msg_id,
@@ -111,7 +120,9 @@ export class EntStateInterface implements DataHandlerInterface<ReadEntStateMessa
 
     async read(request: EntStateMessage.ReadEntStateMessage): Promise<EntStateReadResponseMessage> {
         const query = EntStateInterface.convertReadRequestToDatabaseQuery(request);
+        console.log('executing query', query);
         const data: EntState[] = await this._db.retrieve(query);
+        console.log('got', data);
 
         return {
             msg_id: request.msg_id,
