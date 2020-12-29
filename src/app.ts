@@ -40,8 +40,9 @@ async function reqReceived(
     content: any,
 ): Promise<MessageResponses | null> {
     // TODO: checks for message integrity.
+    console.log('got message with routing key', routingKey, content);
 
-    if (routingKey && routingKey.startsWith('event.')) {
+    if (routingKey && routingKey.startsWith('events.')) {
         if (content == null || eventDB == null || eventInterface == null) {
             // Blank (null content) messages are ignored.
             // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
@@ -64,7 +65,7 @@ async function reqReceived(
         }
     }
 
-    if (routingKey && routingKey.startsWith('ent.')) {
+    if (routingKey && routingKey.startsWith('ents.')) {
         if (content == null || stateDB == null || stateInterface == null) {
             // Blank (null content) messages are ignored.
             // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
