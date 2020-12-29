@@ -1,5 +1,5 @@
 import { DatabaseInterface, InsertResult } from '../DatabaseInterface';
-import { Collection, Db, ObjectID } from 'mongodb';
+import { Collection, Db, ObjectID, UpdateQuery } from 'mongodb';
 
 export class DefaultInterface<QUERY, OBJECT> implements DatabaseInterface<QUERY, OBJECT> {
 
@@ -35,12 +35,27 @@ export class DefaultInterface<QUERY, OBJECT> implements DatabaseInterface<QUERY,
     }
 
     async modify(id: string, updated: Partial<OBJECT>): Promise<boolean> {
+        console.log('trying to perform operation on', id, 'with update', updated);
+        const manipulation: UpdateQuery<OBJECT> = {};
+
+        for (const key of Object.keys(updated) as (keyof OBJECT)[]) {
+            const value = updated[key];
+            if (value !== undefined) {
+                if (!manipulation.$set) manipulation.$set = {};
+
+                // @ts-ignore
+                manipulation.$set[key] = value;
+            }
+        }
+
+        console.log('converted this into', manipulation);
+
         const result = await this._objects.updateOne({
             _id: new ObjectID(id),
-        }, updated);
+        }, manipulation);
 
         if (result && result.matchedCount === 1) {
-            await this.log(result.upsertedId._id.toHexString(), 'updated', { changes: updated });
+            await this.log(id, 'updated', { changes: updated });
 
             return true;
         }
@@ -62,9 +77,14 @@ export class DefaultInterface<QUERY, OBJECT> implements DatabaseInterface<QUERY,
         return Promise.resolve(false);
     }
 
-    retrieve(query: QUERY): Promise<OBJECT[]> {
-        return this._objects.find(query)
-            .toArray();
+    async retrieve(query: QUERY): Promise<OBJECT[]> {
+        return (await this._objects.find(query)
+            .toArray())
+            .map((entry) => ({
+                ...entry,
+                id: entry._id,
+                _id: undefined,
+            }));
     }
 
     private async log(id: string, action: string, additional: Record<string, any> = {}) {
