@@ -2,7 +2,7 @@ import {
     Channel, connect as amqpConnect, Connection, Message,
 } from 'amqplib';
 
-import { EventMsgValidator, EventRes, EntStateResponse } from '@uems/uemscommlib';
+import { EventMsgValidator, EventRes, EntStateResponse, EntStateMessageValidator } from '@uems/uemscommlib';
 import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
 
 const fs = require('fs').promises;
@@ -78,6 +78,8 @@ export namespace Messaging {
             if (!passesValidation) {
                 // Messages not compliant with the schema are dropped.
                 console.log('Message Dropped: Not Schema Compliant');
+                console.log(passesValidation);
+                console.log(contentJson);
                 return;
             }
 
@@ -151,7 +153,7 @@ export namespace Messaging {
             reqRecvCallback: MessageHandler,
             topics: string[],
         ) {
-            const msgValidator = await EventMsgValidator.setup();
+            const msgValidator: MessageValidator[] = [await EventMsgValidator.setup(), new EntStateMessageValidator()];
             console.log('Connecting to rabbitmq...');
             const data = await fs.readFile(configPath);
             const configJson: MqConfig = JSON.parse(data.toString());
@@ -165,7 +167,7 @@ export namespace Messaging {
                     const res = await amqpConnect(`${configJson.uri}?heartbeat=60`)
                         .then(
                             (conn: Connection) => {
-                                Messenger.configureConnection(conn, reqRecvCallback, topics, [msgValidator])
+                                Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator)
                                     .then(
                                         (messenger: Messenger) => messenger,
                                     );
