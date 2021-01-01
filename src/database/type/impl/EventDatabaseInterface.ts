@@ -18,6 +18,9 @@ export type Event = {
     start_date: number,
     end_date: number,
     venue: string[],
+    attendance: number,
+    ents?: string,
+    state?: string,
 };
 
 export class EventDatabaseInterface extends DefaultInterface<EventQuery, Event> {
