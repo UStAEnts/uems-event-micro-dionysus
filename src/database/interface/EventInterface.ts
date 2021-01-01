@@ -2,6 +2,7 @@ import { DataHandlerInterface } from './DataHandlerInterface';
 import { CreateEventMsg, DeleteEventMsg, ReadEventMsg, UpdateEventMsg, } from '@uems/uemscommlib/build/messaging/types/event_message_schema';
 import { InternalEvent, MsgIntention, MsgStatus, ReadRequestResponseMsg, RequestResponseMsg, } from '@uems/uemscommlib/build/messaging/types/event_response_schema';
 import { Event, EventDatabaseInterface, EventQuery } from '../type/impl/EventDatabaseInterface';
+import { ObjectID } from "mongodb";
 
 export class EventInterface implements DataHandlerInterface<ReadEventMsg,
     CreateEventMsg,
@@ -18,6 +19,10 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
 
     private static convertReadRequestToDatabaseQuery(request: ReadEventMsg): EventQuery {
         const query = {};
+
+        if (request.event_id !== undefined) {
+            Object.assign(query, { _id: new ObjectID(request.event_id) });
+        }
 
         // There is probably a better way to do this - maybe a content.map(|v| if (v.isEmpty()){remove(v)}) type thing.
         if (request.event_name !== undefined) {
@@ -50,6 +55,8 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
             start_date: request.event_start_date,
             end_date: request.event_end_date,
             venue: request.venue_ids,
+            // Get rid of this as soon as possible, move to request
+            attendance:request.predicted_attendance,
         };
 
         // TODO, proper event checks.
@@ -137,6 +144,8 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
             start_date: request.event_start_date as number,
             end_date: request.event_end_date as number,
             venue: request.venue_ids as string[],
+            // TODO: convert this to an actual parameter?
+            attendance: 0,
         };
 
         // Update database
@@ -162,7 +171,9 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
             event_end_date: event.end_date,
             venue_ids: JSON.stringify(event.venue),
             // TODO: migrate to database
-            attendance: 0,
+            attendance: event.attendance,
+            ents: event.ents,
+            state: event.state,
         }));
 
         return {
