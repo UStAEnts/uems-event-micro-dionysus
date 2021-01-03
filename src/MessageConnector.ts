@@ -1,8 +1,6 @@
-import {
-    Channel, connect as amqpConnect, Connection, Message,
-} from 'amqplib';
+import { Channel, connect as amqpConnect, Connection, Message, } from 'amqplib';
 
-import { EventMsgValidator, EventRes, EntStateResponse, EntStateMessageValidator } from '@uems/uemscommlib';
+import { EventMessageValidator, EventResponse } from '@uems/uemscommlib';
 import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
 
 const fs = require('fs').promises;
@@ -25,10 +23,11 @@ const REQUEST_EXCHANGE: string = 'request';
 const RABBIT_MQ_RETRY_TIMEOUT: number = 2000;
 
 export namespace Messaging {
-    export type MessageResponses = EventRes.ReadRequestResponseMsg
-        | EventRes.RequestResponseMsg
-        | EntStateResponse.EntStateReadResponseMessage
-        | EntStateResponse.EntStateResponseMessage;
+    import EventReadResponseMessage = EventResponse.EventReadResponseMessage;
+    import EventResponseMessage = EventResponse.EventResponseMessage;
+
+    export type MessageResponses = EventReadResponseMessage
+        | EventResponseMessage;
     type MessageHandler = (routingKey: string, message: any) => (MessageResponses | null)
         | Promise<MessageResponses | null>;
 
@@ -137,7 +136,6 @@ export namespace Messaging {
             const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidators, msgCallback);
 
             rcvCh.consume(queue.queue, async (msg) => {
-                console.log(msg);
                 await messenger.handleMsg(msg);
             }, { noAck: true });
 
@@ -153,7 +151,7 @@ export namespace Messaging {
             reqRecvCallback: MessageHandler,
             topics: string[],
         ) {
-            const msgValidator: MessageValidator[] = [await EventMsgValidator.setup(), new EntStateMessageValidator()];
+            const msgValidator: MessageValidator[] = [await EventMessageValidator.setup()];
             console.log('Connecting to rabbitmq...');
             const data = await fs.readFile(configPath);
             const configJson: MqConfig = JSON.parse(data.toString());

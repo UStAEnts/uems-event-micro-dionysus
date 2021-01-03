@@ -1,22 +1,19 @@
 import { Database } from './DatabaseConnector';
 import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
+import { EventInterface } from './database/interface/EventInterface';
+import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
 import express = require('express');
 import cookieParser = require('cookie-parser');
+import DatabaseConnections = Database.DatabaseConnections;
+import MessageResponses = Messaging.MessageResponses;
+import { EventResponse, MsgStatus } from '@uems/uemscommlib';
+import EventResponseMessage = EventResponse.EventResponseMessage;
 
 const fs = require('fs').promises;
 
-import { EventRes } from '@uems/uemscommlib';
-import { EventInterface } from './database/interface/EventInterface';
-import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
-import { EntStateDatabaseInterface } from './database/type/impl/EntStateDatabaseInterface';
-import DatabaseConnections = Database.DatabaseConnections;
-import MessageResponses = Messaging.MessageResponses;
-import { EntStateInterface } from './database/interface/EntStateInterface';
-
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
-const ENT_STATE_DETAILS_SERVICE_TOPIC: string = 'ents.details.*';
 
 // The path to the rabbitMQ config which is used to connect to the messaging system.
 const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
@@ -24,12 +21,10 @@ const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
 export const app = express();
 
 let eventDB: EventDatabaseInterface | null = null;
-let stateDB: EntStateDatabaseInterface | null = null;
 
 let eventInterface: EventInterface | null = null;
-let stateInterface: EntStateInterface | null = null;
 
-async function handleUnsupportedOp(content: any): Promise<EventRes.RequestResponseMsg | null> {
+async function handleUnsupportedOp(content: any): Promise<EventResponseMessage | null> {
     console.error('Unsupported operation: ');
     console.error(content.msg_intention);
     return null;
@@ -39,10 +34,10 @@ async function reqReceived(
     routingKey: string,
     content: any,
 ): Promise<MessageResponses | null> {
-    // TODO: checks for message integrity.
-    console.log('got message with routing key', routingKey, content);
+    try {
+        // TODO: checks for message integrity.
+        console.log('got message with routing key', routingKey, content);
 
-    if (routingKey && routingKey.startsWith('events.')) {
         if (content == null || eventDB == null || eventInterface == null) {
             // Blank (null content) messages are ignored.
             // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
@@ -51,44 +46,30 @@ async function reqReceived(
             return null;
         }
 
-        switch (content.msg_intention) {
-            case 'READ':
-                return eventInterface.read(content);
-            case 'CREATE':
-                return eventInterface.create(content);
-            case 'UPDATE':
-                return eventInterface.modify(content);
-            case 'DELETE':
-                return eventInterface.delete(content);
-            default:
-                return handleUnsupportedOp(content);
-        }
-    }
-
-    if (routingKey && routingKey.startsWith('ents.')) {
-        if (content == null || stateDB == null || stateInterface == null) {
-            // Blank (null content) messages are ignored.
-            // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
-
-            console.log('Message content null or DB not ready!, message dropped');
-            return null;
-        }
+        console.log('trying to handle:', content.msg_intention);
 
         switch (content.msg_intention) {
             case 'READ':
-                return stateInterface.read(content);
+                return await eventInterface.read(content);
             case 'CREATE':
-                return stateInterface.create(content);
+                return await eventInterface.create(content);
             case 'UPDATE':
-                return stateInterface.modify(content);
+                return await eventInterface.modify(content);
             case 'DELETE':
-                return stateInterface.delete(content);
+                return await eventInterface.delete(content);
             default:
                 return handleUnsupportedOp(content);
         }
+    } catch (err) {
+        console.error('something went wrong');
+        console.error(err);
+        return {
+            msg_intention: content.msg_intention,
+            msg_id: content.msg_id,
+            status: MsgStatus.FAIL,
+            result: [],
+        };
     }
-
-    return null;
 }
 
 /**
@@ -100,14 +81,12 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     console.log('database connection is ready');
 
     eventDB = eventsConnection.event;
-    stateDB = eventsConnection.ent;
     eventInterface = new EventInterface(eventDB);
-    stateInterface = new EntStateInterface(stateDB);
 
     await Messaging.Messenger.setup(
         RABBIT_MQ_CONFIG_PATH,
         reqReceived,
-        [EVENT_DETAILS_SERVICE_TOPIC, ENT_STATE_DETAILS_SERVICE_TOPIC],
+        [EVENT_DETAILS_SERVICE_TOPIC],
     );
 
     app.listen(process.env.PORT, () => {
