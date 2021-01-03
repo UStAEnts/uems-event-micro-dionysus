@@ -1,8 +1,7 @@
 import { Db } from 'mongodb';
 import { DefaultInterface } from './DefaultInterface';
-import { EntStateValidators } from "@uems/uemscommlib/build/ent/EntStateValidators";
-import EntStateCreationSchema = EntStateValidators.EntStateCreationSchema;
-import EntStateRepresentation = EntStateValidators.EntStateRepresentation;
+import { EntStateResponse } from '@uems/uemscommlib';
+import InternalEntState = EntStateResponse.InternalEntState;
 
 const ENT_STATE_DETAILS_COLLECTION = 'details';
 const ENT_STATE_CHANGELOG_COLLECTION = 'changelog';
@@ -14,7 +13,7 @@ export type EntStateQuery = {
     color?: string,
 };
 
-export type EntState = EntStateRepresentation;
+export type EntState = InternalEntState;
 
 export class EntStateDatabaseInterface extends DefaultInterface<EntStateQuery, EntState> {
 
