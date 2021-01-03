@@ -1,15 +1,22 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import { DataHandlerInterface } from './DataHandlerInterface';
-import { CreateEventMsg, DeleteEventMsg, ReadEventMsg, UpdateEventMsg, } from '@uems/uemscommlib/build/messaging/types/event_message_schema';
-import { InternalEvent, MsgIntention, MsgStatus, ReadRequestResponseMsg, RequestResponseMsg, } from '@uems/uemscommlib/build/messaging/types/event_response_schema';
-import { Event, EventDatabaseInterface, EventQuery } from '../type/impl/EventDatabaseInterface';
-import { ObjectID } from "mongodb";
+import { EventDatabaseInterface } from '../type/impl/EventDatabaseInterface';
+import { FilterQuery, MatchKeysAndValues, ObjectID, UpdateQuery } from 'mongodb';
+import { EventMessage, EventResponse, MsgStatus } from '@uems/uemscommlib';
+import ReadEventMessage = EventMessage.ReadEventMessage;
+import CreateEventMessage = EventMessage.CreateEventMessage;
+import UpdateEventMessage = EventMessage.UpdateEventMessage;
+import DeleteEventMessage = EventMessage.DeleteEventMessage;
+import EventResponseMessage = EventResponse.EventResponseMessage;
+import EventReadResponseMessage = EventResponse.EventReadResponseMessage;
+import InternalEvent = EventResponse.InternalEvent;
 
-export class EventInterface implements DataHandlerInterface<ReadEventMsg,
-    CreateEventMsg,
-    UpdateEventMsg,
-    DeleteEventMsg,
-    RequestResponseMsg,
-    ReadRequestResponseMsg> {
+export class EventInterface implements DataHandlerInterface<ReadEventMessage,
+    CreateEventMessage,
+    UpdateEventMessage,
+    DeleteEventMessage,
+    EventResponseMessage,
+    EventReadResponseMessage> {
 
     protected _db: EventDatabaseInterface;
 
@@ -17,57 +24,163 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
         this._db = db;
     }
 
-    private static convertReadRequestToDatabaseQuery(request: ReadEventMsg): EventQuery {
-        const query = {};
+    private static convertReadRequestToDatabaseQuery(request: ReadEventMessage) {
+        const query: FilterQuery<InternalEvent> = {};
 
-        if (request.event_id !== undefined) {
-            Object.assign(query, { _id: new ObjectID(request.event_id) });
+        if (request.id !== undefined) {
+            if (ObjectID.isValid(request.id)) {
+                query._id = new ObjectID(request.id);
+            } else {
+                throw new Error('Invalid ID');
+            }
         }
 
         // There is probably a better way to do this - maybe a content.map(|v| if (v.isEmpty()){remove(v)}) type thing.
-        if (request.event_name !== undefined) {
-            Object.assign(query, { name: request.event_name });
+        if (request.name !== undefined) {
+            query.$text = {
+                $search: request.name,
+            };
         }
 
-        if (request.event_start_date_range_begin !== undefined) {
-            Object.assign(query, { start_date_before: request.event_start_date_range_begin });
+        if (request.start) {
+            query.start = request.start;
         }
 
-        if (request.event_start_date_range_end !== undefined) {
-            Object.assign(query, { start_date_after: request.event_start_date_range_end });
+        if (request.end) {
+            query.end = request.end;
         }
 
-        if (request.event_end_date_range_begin !== undefined) {
-            Object.assign(query, { end_date_before: request.event_end_date_range_begin });
+        if (request.attendance) {
+            query.attendance = request.attendance;
         }
 
-        if (request.event_end_date_range_end !== undefined) {
-            Object.assign(query, { end_date_after: request.event_end_date_range_end });
+        if (request.venueIDs) {
+            query.venues = {
+                $size: request.venueIDs.length,
+                $all: request.venueIDs,
+            };
+        }
+
+        if (request.entsID) {
+            // @ts-ignore
+            query.ents = request.entsID;
+        }
+
+        if (request.stateID) {
+            // @ts-ignore
+            query.state = request.stateID;
+        }
+
+        if (request.startRangeBegin !== undefined) {
+            if (query.start) {
+                if (typeof (query.start) === 'object') {
+                    query.start.$gt = request.startRangeBegin;
+                } else {
+                    throw new Error('Invalid configured start search, should not happen?');
+                }
+            } else {
+                query.start = {
+                    $gt: request.startRangeBegin,
+                };
+            }
+        }
+
+        if (request.startRangeEnd !== undefined) {
+            if (query.start) {
+                if (typeof (query.start) === 'object') {
+                    query.start.$lt = request.startRangeEnd;
+                } else {
+                    throw new Error('Invalid configured start search, should not happen?');
+                }
+            } else {
+                query.start = {
+                    $lt: request.startRangeEnd,
+                };
+            }
+        }
+
+        if (request.endRangeBegin !== undefined) {
+            if (query.end) {
+                if (typeof (query.end) === 'object') {
+                    query.end.$gt = request.endRangeBegin;
+                } else {
+                    throw new Error('Invalid configured end search, should not happen?');
+                }
+            } else {
+                query.end = {
+                    $gt: request.endRangeBegin,
+                };
+            }
+        }
+
+        if (request.endRangeEnd !== undefined) {
+            if (query.end) {
+                if (typeof (query.end) === 'object') {
+                    query.end.$lt = request.endRangeEnd;
+                } else {
+                    throw new Error('Invalid configured end search, should not happen?');
+                }
+            } else {
+                query.end = {
+                    $lt: request.endRangeEnd,
+                };
+            }
+        }
+
+        if (request.attendanceRangeBegin !== undefined) {
+            if (query.attendance) {
+                if (typeof (query.attendance) === 'object') {
+                    query.attendance.$gt = request.attendanceRangeBegin;
+                } else {
+                    throw new Error('Invalid configured attendance search, should not happen?');
+                }
+            } else {
+                query.attendance = {
+                    $gt: request.attendanceRangeBegin,
+                };
+            }
+        }
+
+        if (request.attendanceRangeEnd !== undefined) {
+            if (query.attendance) {
+                if (typeof (query.attendance) === 'object') {
+                    query.attendance.$lt = request.attendanceRangeEnd;
+                } else {
+                    throw new Error('Invalid configured attendance search, should not happen?');
+                }
+            } else {
+                query.attendance = {
+                    $lt: request.attendanceRangeEnd,
+                };
+            }
+        }
+
+        if (request.allVenues) {
+            query.venues = {
+                $all: request.allVenues,
+            };
+        }
+
+        if (request.anyVenues) {
+            query.venues = {
+                $in: request.anyVenues,
+            };
         }
 
         return query;
     }
 
-    async create(request: CreateEventMsg): Promise<RequestResponseMsg> {
-        const event: Event = {
-            id: '0', // Placeholder.
-            name: request.event_name,
-            start_date: request.event_start_date,
-            end_date: request.event_end_date,
-            venue: request.venue_ids,
-            // Get rid of this as soon as possible, move to request
-            attendance:request.predicted_attendance,
+    async create(request: CreateEventMessage): Promise<EventResponseMessage> {
+        // @ts-ignore
+        const event: ShallowInternalEvent = {
+            name: request.name,
+            start: request.start,
+            end: request.end,
+            venues: request.venueIDs,
+            ents: request.entsID,
+            state: request.stateID,
+            attendance: request.attendance,
         };
-
-        // TODO, proper event checks.
-        if (event === null) {
-            return {
-                msg_id: request.msg_id,
-                msg_intention: MsgIntention.CREATE,
-                result: ['Invalid event'],
-                status: MsgStatus.FAIL,
-            };
-        }
 
         try {
             const result = await this._db.insert(event);
@@ -75,7 +188,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
             if (result.id) {
                 return {
                     msg_id: request.msg_id,
-                    msg_intention: MsgIntention.CREATE,
+                    msg_intention: 'CREATE',
                     result: [result.id],
                     status: MsgStatus.SUCCESS,
                 };
@@ -83,103 +196,95 @@ export class EventInterface implements DataHandlerInterface<ReadEventMsg,
 
             return {
                 msg_id: request.msg_id,
-                msg_intention: MsgIntention.CREATE,
+                msg_intention: 'CREATE',
                 result: [result.err_msg === undefined ? '' : result.err_msg],
                 status: MsgStatus.FAIL,
             };
         } catch (e) {
             return {
                 msg_id: request.msg_id,
-                msg_intention: MsgIntention.CREATE,
+                msg_intention: 'CREATE',
                 result: ['Failed to create the evenn the backing store'],
                 status: MsgStatus.FAIL,
             };
         }
     }
 
-    async delete(request: DeleteEventMsg): Promise<RequestResponseMsg> {
-        if (request.event_id === undefined) {
-            return {
-                msg_id: request.msg_id,
-                msg_intention: MsgIntention.DELETE,
-                result: ['Invalid request, event_id was not specified'],
-                status: MsgStatus.FAIL,
-            };
-        }
-
-        const result = await this._db.remove(request.event_id);
+    async delete(request: DeleteEventMessage): Promise<EventResponseMessage> {
+        const result = await this._db.remove(request.id);
 
         return {
             msg_id: request.msg_id,
-            msg_intention: MsgIntention.DELETE,
-            result: [request.event_id],
+            msg_intention: 'DELETE',
+            result: [request.id],
             status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
         };
     }
 
-    async modify(request: UpdateEventMsg): Promise<RequestResponseMsg> {
-        const required: (keyof UpdateEventMsg)[] = [
-            'event_id',
-            'event_name',
-            'event_start_date',
-            'event_end_date',
-            'venue_ids',
-        ];
+    async modify(request: UpdateEventMessage): Promise<EventResponseMessage> {
+        const update: UpdateQuery<InternalEvent> = {};
+        update.$set = {} as MatchKeysAndValues<InternalEvent>;
 
-        // Validate properties
-        for (const key of required) {
-            if (request[key] === undefined) {
-                return {
-                    msg_id: request.msg_id,
-                    msg_intention: MsgIntention.UPDATE,
-                    result: [`Invalid request, '${key}' was not specified`],
-                    status: MsgStatus.FAIL,
-                };
-            }
+        // TODO: figure out why this is a dumpster fire of ts-ignores.
+
+        if (request.name) {
+            // @ts-ignore
+            update.$set['name'] = request.name;
+        }
+        if (request.start) {
+            // @ts-ignore
+            update.$set['start'] = request.start;
+        }
+        if (request.end) {
+            // @ts-ignore
+            update.$set['end'] = request.end;
+        }
+        if (request.attendance) {
+            // @ts-ignore
+            update.$set['attendance'] = request.attendance;
+        }
+        if (request.venueIDs) {
+            // @ts-ignore
+            update.$set['venues'] = request.venueIDs;
+        }
+        if (request.entsID) {
+            // @ts-ignore
+            update.$set['ents'] = request.entsID;
+        }
+        if (request.stateID) {
+            // @ts-ignore
+            update.$set['state'] = request.stateID;
         }
 
-        const event: Event = {
-            id: request.event_id,
-            name: request.event_name as string,
-            start_date: request.event_start_date as number,
-            end_date: request.event_end_date as number,
-            venue: request.venue_ids as string[],
-            // TODO: convert this to an actual parameter?
-            attendance: 0,
-        };
+        console.log('executing update', update);
 
         // Update database
-        const result = await this._db.modify(request.event_id, event);
+        const result = await (this._db as EventDatabaseInterface).modify(request.id, update);
 
         // Return updated result
         return {
             msg_id: request.msg_id,
-            msg_intention: MsgIntention.UPDATE,
-            result: [request.event_id],
+            msg_intention: 'UPDATE',
+            result: [request.id],
             status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
         };
     }
 
-    async read(request: ReadEventMsg): Promise<ReadRequestResponseMsg> {
+    async read(request: ReadEventMessage): Promise<EventReadResponseMessage> {
         const query = EventInterface.convertReadRequestToDatabaseQuery(request);
-        const data: Event[] = await this._db.retrieve(query);
+        const data: InternalEvent[] = await this._db.retrieve(query);
 
-        const converted: InternalEvent[] = data.map((event) => ({
-            event_id: event.id,
-            event_name: event.name,
-            event_start_date: event.start_date,
-            event_end_date: event.end_date,
-            venue_ids: JSON.stringify(event.venue),
-            // TODO: migrate to database
-            attendance: event.attendance,
-            ents: event.ents,
-            state: event.state,
-        }));
+        // Removed undefined/null values
+        // source: https://stackoverflow.com/a/38340374
+        data.forEach((obj) => Object.keys(obj)
+            // @ts-ignore
+            // eslint-disable-next-line no-param-reassign
+            .forEach((key) => (obj[key] === null || obj[key] === undefined) && delete obj[key]));
 
         return {
             msg_id: request.msg_id,
-            msg_intention: MsgIntention.READ,
-            result: converted,
+            msg_intention: 'READ',
+            result: data,
             status: MsgStatus.SUCCESS,
         };
     }
