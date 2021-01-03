@@ -5,9 +5,9 @@ export class DefaultInterface<QUERY, OBJECT> implements DatabaseInterface<QUERY,
 
     private _db: Db;
 
-    private _objects: Collection;
+    protected _objects: Collection;
 
-    private _changelog: Collection;
+    protected _changelog: Collection;
 
     constructor(db: Db, objectsCollection: string, changelogCollection: string) {
         this._db = db;
@@ -87,7 +87,7 @@ export class DefaultInterface<QUERY, OBJECT> implements DatabaseInterface<QUERY,
             }));
     }
 
-    private async log(id: string, action: string, additional: Record<string, any> = {}) {
+    protected async log(id: string, action: string, additional: Record<string, any> = {}) {
         try {
             await this._changelog.insertOne({
                 ...additional,
@@ -96,7 +96,7 @@ export class DefaultInterface<QUERY, OBJECT> implements DatabaseInterface<QUERY,
                 timestamp: Date.now(),
             });
         } catch (e) {
-            console.warn('Failed to save changelog');
+            console.warn('Failed to save changelog', e);
         }
     }
 
