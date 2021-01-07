@@ -8,15 +8,16 @@ import CreateEventMessage = EventMessage.CreateEventMessage;
 import UpdateEventMessage = EventMessage.UpdateEventMessage;
 import DeleteEventMessage = EventMessage.DeleteEventMessage;
 import EventResponseMessage = EventResponse.EventResponseMessage;
-import EventReadResponseMessage = EventResponse.EventReadResponseMessage;
 import InternalEvent = EventResponse.InternalEvent;
+import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
+import EventServiceReadResponseMessage = EventResponse.EventServiceReadResponseMessage;
 
 export class EventInterface implements DataHandlerInterface<ReadEventMessage,
     CreateEventMessage,
     UpdateEventMessage,
     DeleteEventMessage,
     EventResponseMessage,
-    EventReadResponseMessage> {
+    EventServiceReadResponseMessage> {
 
     protected _db: EventDatabaseInterface;
 
@@ -25,7 +26,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
     }
 
     private static convertReadRequestToDatabaseQuery(request: ReadEventMessage) {
-        const query: FilterQuery<InternalEvent> = {};
+        const query: FilterQuery<ShallowInternalEvent> = {};
 
         if (request.id !== undefined) {
             if (ObjectID.isValid(request.id)) {
@@ -191,6 +192,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
                     msg_intention: 'CREATE',
                     result: [result.id],
                     status: MsgStatus.SUCCESS,
+                    userID: request.userID,
                 };
             }
 
@@ -199,6 +201,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
                 msg_intention: 'CREATE',
                 result: [result.err_msg === undefined ? '' : result.err_msg],
                 status: MsgStatus.FAIL,
+                userID: request.userID,
             };
         } catch (e) {
             return {
@@ -206,6 +209,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
                 msg_intention: 'CREATE',
                 result: ['Failed to create the evenn the backing store'],
                 status: MsgStatus.FAIL,
+                userID: request.userID,
             };
         }
     }
@@ -218,6 +222,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
             msg_intention: 'DELETE',
             result: [request.id],
             status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
+            userID: request.userID,
         };
     }
 
@@ -267,12 +272,13 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
             msg_intention: 'UPDATE',
             result: [request.id],
             status: (result ? MsgStatus.SUCCESS : MsgStatus.FAIL),
+            userID: request.userID,
         };
     }
 
-    async read(request: ReadEventMessage): Promise<EventReadResponseMessage> {
+    async read(request: ReadEventMessage): Promise<EventServiceReadResponseMessage> {
         const query = EventInterface.convertReadRequestToDatabaseQuery(request);
-        const data: InternalEvent[] = await this._db.retrieve(query);
+        const data: ShallowInternalEvent[] = await this._db.retrieve(query);
 
         // Removed undefined/null values
         // source: https://stackoverflow.com/a/38340374
@@ -286,6 +292,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
             msg_intention: 'READ',
             result: data,
             status: MsgStatus.SUCCESS,
+            userID: request.userID,
         };
     }
 

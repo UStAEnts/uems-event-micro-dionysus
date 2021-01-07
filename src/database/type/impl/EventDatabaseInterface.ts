@@ -2,6 +2,7 @@ import { Db, ObjectID } from 'mongodb';
 import { DefaultInterface } from './DefaultInterface';
 import { EventResponse } from "@uems/uemscommlib";
 import InternalEvent = EventResponse.InternalEvent;
+import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
 
 const EVENT_DETAILS_COLLECTION = 'details';
 const EVENT_CHANGELOG_COLLECTION = 'changelog';
@@ -33,7 +34,7 @@ export type Changelog = {
     user?: string,
 };
 
-export class EventDatabaseInterface extends DefaultInterface<any, InternalEvent> {
+export class EventDatabaseInterface extends DefaultInterface<any, ShallowInternalEvent> {
 
     constructor(db: Db) {
         super(db, EVENT_DETAILS_COLLECTION, EVENT_CHANGELOG_COLLECTION);
