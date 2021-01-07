@@ -1,7 +1,8 @@
 import { Channel, connect as amqpConnect, Connection, Message, } from 'amqplib';
 
-import { EventMessageValidator, EventResponse } from '@uems/uemscommlib';
+import { CommentResponse, EventMessageValidator, EventResponse } from '@uems/uemscommlib';
 import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
+import { CommentValidators } from "@uems/uemscommlib/build/comment/CommentValidators";
 
 const fs = require('fs').promises;
 
@@ -25,9 +26,14 @@ const RABBIT_MQ_RETRY_TIMEOUT: number = 2000;
 export namespace Messaging {
     import EventReadResponseMessage = EventResponse.EventReadResponseMessage;
     import EventResponseMessage = EventResponse.EventResponseMessage;
+    import CommentReadResponseMessage = CommentResponse.CommentReadResponseMessage;
+    import CommentResponseMessage = CommentResponse.CommentResponseMessage;
+    import CommentMessageValidator = CommentValidators.CommentMessageValidator;
+    import EventServiceReadResponseMessage = EventResponse.EventServiceReadResponseMessage;
+    import CommentServiceReadResponseMessage = CommentResponse.CommentServiceReadResponseMessage;
 
-    export type MessageResponses = EventReadResponseMessage
-        | EventResponseMessage;
+    export type MessageResponses = EventServiceReadResponseMessage
+        | EventResponseMessage | CommentServiceReadResponseMessage | CommentResponseMessage;
     type MessageHandler = (routingKey: string, message: any) => (MessageResponses | null)
         | Promise<MessageResponses | null>;
 
@@ -151,7 +157,7 @@ export namespace Messaging {
             reqRecvCallback: MessageHandler,
             topics: string[],
         ) {
-            const msgValidator: MessageValidator[] = [await EventMessageValidator.setup()];
+            const msgValidator: MessageValidator[] = [await EventMessageValidator.setup(), new CommentMessageValidator()];
             console.log('Connecting to rabbitmq...');
             const data = await fs.readFile(configPath);
             const configJson: MqConfig = JSON.parse(data.toString());
