@@ -1,6 +1,6 @@
 import { Channel, connect as amqpConnect, Connection, Message, } from 'amqplib';
 
-import { CommentResponse, EventMessageValidator, EventResponse } from '@uems/uemscommlib';
+import { CommentResponse, EventMessageValidator, EventResponse, SignupResponse } from '@uems/uemscommlib';
 import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
 import { CommentValidators } from "@uems/uemscommlib/build/comment/CommentValidators";
 
@@ -31,9 +31,12 @@ export namespace Messaging {
     import CommentMessageValidator = CommentValidators.CommentMessageValidator;
     import EventServiceReadResponseMessage = EventResponse.EventServiceReadResponseMessage;
     import CommentServiceReadResponseMessage = CommentResponse.CommentServiceReadResponseMessage;
+    import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
+    import SignupResponseMessage = SignupResponse.SignupResponseMessage;
 
-    export type MessageResponses = EventServiceReadResponseMessage
-        | EventResponseMessage | CommentServiceReadResponseMessage | CommentResponseMessage;
+    export type MessageResponses = EventServiceReadResponseMessage | EventResponseMessage
+        | CommentServiceReadResponseMessage | CommentResponseMessage
+        | SignupServiceReadResponseMessage | SignupResponseMessage;
     type MessageHandler = (routingKey: string, message: any) => (MessageResponses | null)
         | Promise<MessageResponses | null>;
 
