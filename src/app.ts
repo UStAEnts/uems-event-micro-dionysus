@@ -3,23 +3,16 @@ import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
 import { EventInterface } from './database/interface/EventInterface';
 import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
+import { CommentResponse, EventResponse, MsgStatus, SignupResponse } from '@uems/uemscommlib';
+import { GenericCommentDatabase } from "@uems/micro-builder/build/database/GenericCommentDatabase";
+import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
+import { SignupInterface } from "./database/interface/SignupInterface";
 import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
 import MessageResponses = Messaging.MessageResponses;
-import { CommentResponse, EventResponse, MsgStatus, SignupResponse } from '@uems/uemscommlib';
 import EventResponseMessage = EventResponse.EventResponseMessage;
-import { GenericCommentDatabase } from "@uems/micro-builder/build/database/GenericCommentDatabase";
-import { constants } from "http2";
-import { ConsumeMessage } from "amqplib";
 import ShallowInternalComment = CommentResponse.ShallowInternalComment;
-import CommentResponseMessage = CommentResponse.CommentResponseMessage;
-import CommentReadResponseMessage = CommentResponse.CommentReadResponseMessage;
-import InternalComment = CommentResponse.InternalComment;
-import CommentServiceReadResponseMessage = CommentResponse.CommentServiceReadResponseMessage;
-import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
-import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
-import { SignupInterface } from "./database/interface/SignupInterface";
 import SignupResponseMessage = SignupResponse.SignupResponseMessage;
 import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
 
@@ -108,7 +101,7 @@ async function reqReceived(
 
         console.log('trying to handle:', content.msg_intention);
 
-        if (routingKey.startsWith('events.signup')) {
+        if (routingKey.startsWith('events.signups')) {
             return await handleSignup(content, signupInterface);
         }
 
