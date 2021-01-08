@@ -3,6 +3,7 @@ import { Channel, connect as amqpConnect, Connection, Message, } from 'amqplib';
 import { CommentResponse, EventMessageValidator, EventResponse, SignupResponse } from '@uems/uemscommlib';
 import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
 import { CommentValidators } from "@uems/uemscommlib/build/comment/CommentValidators";
+import { SignupValidators } from "@uems/uemscommlib/build/signup/SignupValidators";
 
 const fs = require('fs').promises;
 
@@ -33,6 +34,7 @@ export namespace Messaging {
     import CommentServiceReadResponseMessage = CommentResponse.CommentServiceReadResponseMessage;
     import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
     import SignupResponseMessage = SignupResponse.SignupResponseMessage;
+    import SignupMessageValidator = SignupValidators.SignupMessageValidator;
 
     export type MessageResponses = EventServiceReadResponseMessage | EventResponseMessage
         | CommentServiceReadResponseMessage | CommentResponseMessage
@@ -86,8 +88,7 @@ export namespace Messaging {
             if (!passesValidation) {
                 // Messages not compliant with the schema are dropped.
                 console.log('Message Dropped: Not Schema Compliant');
-                console.log(passesValidation);
-                console.log(contentJson);
+                console.log('Invalid message', contentJson);
                 return;
             }
 
@@ -139,6 +140,7 @@ export namespace Messaging {
             });
 
             topics.forEach((topic) => {
+                console.log(`MessageConnector: binding ${topic} to this queue`);
                 rcvCh.bindQueue(queue.queue, REQUEST_EXCHANGE, topic);
             });
 
@@ -160,7 +162,7 @@ export namespace Messaging {
             reqRecvCallback: MessageHandler,
             topics: string[],
         ) {
-            const msgValidator: MessageValidator[] = [await EventMessageValidator.setup(), new CommentMessageValidator()];
+            const msgValidator: MessageValidator[] = [await EventMessageValidator.setup(), new CommentMessageValidator(), new SignupMessageValidator()];
             console.log('Connecting to rabbitmq...');
             const data = await fs.readFile(configPath);
             const configJson: MqConfig = JSON.parse(data.toString());
