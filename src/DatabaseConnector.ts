@@ -2,6 +2,7 @@ import * as zod from 'zod';
 import * as MongoClient from 'mongodb';
 import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
 import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
+import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
 
 export namespace Database {
 
@@ -14,6 +15,7 @@ export namespace Database {
         mapping: zod.object({
             event: zod.string(),
             comment: zod.string(),
+            signup: zod.string(),
         }),
         options: zod.any().optional(),
     })
@@ -22,6 +24,7 @@ export namespace Database {
     export type DatabaseConnections = {
         event: EventDatabaseInterface,
         comment: GenericCommentDatabase,
+        signup: SignupDatabaseInterface,
     };
 
     // Connects the datebase connect to the mongoDB database at the given uri.
@@ -46,6 +49,7 @@ export namespace Database {
                     changelog: 'changes',
                     details: 'comments',
                 }),
+                signup: new SignupDatabaseInterface(client.db(configuration.mapping.signup)),
             };
         } catch (e) {
             console.log('failed to connect to the database', e);
