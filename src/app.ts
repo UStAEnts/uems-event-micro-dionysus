@@ -7,7 +7,7 @@ import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
 import MessageResponses = Messaging.MessageResponses;
-import { CommentResponse, EventResponse, MsgStatus } from '@uems/uemscommlib';
+import { CommentResponse, EventResponse, MsgStatus, SignupResponse } from '@uems/uemscommlib';
 import EventResponseMessage = EventResponse.EventResponseMessage;
 import { GenericCommentDatabase } from "@uems/micro-builder/build/database/GenericCommentDatabase";
 import { constants } from "http2";
@@ -17,6 +17,11 @@ import CommentResponseMessage = CommentResponse.CommentResponseMessage;
 import CommentReadResponseMessage = CommentResponse.CommentReadResponseMessage;
 import InternalComment = CommentResponse.InternalComment;
 import CommentServiceReadResponseMessage = CommentResponse.CommentServiceReadResponseMessage;
+import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
+import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
+import { SignupInterface } from "./database/interface/SignupInterface";
+import SignupResponseMessage = SignupResponse.SignupResponseMessage;
+import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
 
 const fs = require('fs').promises;
 
@@ -31,14 +36,36 @@ export const app = express();
 
 let eventDB: EventDatabaseInterface | null = null;
 let commentDB: GenericCommentDatabase | null = null;
+let signupDB: SignupDatabaseInterface | null = null;
 
 let eventInterface: EventInterface | null = null;
+let signupInterface: SignupInterface | null = null;
 
 async function handleUnsupportedOp(content: any): Promise<EventResponseMessage | null> {
     console.error('Unsupported operation: ');
     console.error(content.msg_intention);
     return null;
 }
+
+const handleSignup = (content: any, signup: SignupInterface): Promise<SignupResponseMessage | SignupServiceReadResponseMessage> =>
+    new Promise((resolve, reject) => {
+        switch (content.msg_intention) {
+            case 'CREATE':
+                resolve(signup.create(content));
+                break;
+            case 'DELETE':
+                resolve(signup.delete(content));
+                break;
+            case 'READ':
+                resolve(signup.read(content));
+                break;
+            case 'UPDATE':
+                resolve(signup.modify(content));
+                break;
+            default:
+                reject(new Error(`invalid message intention: + ${content.msg_intention}`));
+        }
+    });
 
 const handleComment = (content: any, comment: GenericCommentDatabase): Promise<string[] | ShallowInternalComment[]> =>
     new Promise((resolve, reject) => {
@@ -69,7 +96,8 @@ async function reqReceived(
         // TODO: checks for message integrity.
         console.log('got message with routing key', routingKey, content);
 
-        if (content == null || eventDB == null || eventInterface == null || commentDB == null) {
+        if (content == null || eventDB == null || eventInterface == null || commentDB == null
+            || signupDB == null || signupInterface == null) {
             // Blank (null content) messages are ignored.
             // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
 
@@ -78,6 +106,10 @@ async function reqReceived(
         }
 
         console.log('trying to handle:', content.msg_intention);
+
+        if (routingKey.startsWith('events.signup')) {
+            return await handleSignup(content, signupInterface);
+        }
 
         if (routingKey.startsWith('events.comment')) {
             const result = await handleComment(content, commentDB);
@@ -127,7 +159,9 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
 
     eventDB = eventsConnection.event;
     commentDB = eventsConnection.comment;
+    signupDB = eventsConnection.signup;
     eventInterface = new EventInterface(eventDB);
+    signupInterface = new SignupInterface(signupDB);
 
     await Messaging.Messenger.setup(
         RABBIT_MQ_CONFIG_PATH,
