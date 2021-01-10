@@ -14,6 +14,9 @@ import DeleteSignupMessage = SignupMessage.DeleteSignupMessage;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 import SignupResponseMessage = SignupResponse.SignupResponseMessage;
 import InternalSignup = SignupResponse.InternalSignup;
+import { _byFile } from "../../logging/Log";
+
+const _l = _byFile(__filename);
 
 export class SignupInterface implements DataHandlerInterface<ReadSignupMessage,
     CreateSignupMessage,
@@ -83,6 +86,8 @@ export class SignupInterface implements DataHandlerInterface<ReadSignupMessage,
             }
         }
 
+        _l.debug('performing a query for signup values:', { query });
+
         return query;
     }
 
@@ -97,6 +102,8 @@ export class SignupInterface implements DataHandlerInterface<ReadSignupMessage,
 
         try {
             const result = await this._db.insert(signup);
+
+            _l.debug('performing a create request for signups', { result });
 
             if (result.id) {
                 return {
@@ -127,6 +134,8 @@ export class SignupInterface implements DataHandlerInterface<ReadSignupMessage,
     }
 
     async delete(request: DeleteSignupMessage): Promise<SignupResponseMessage> {
+        _l.debug(`performing a delete request for id: ${request.id}`);
+
         const result = await this._db.remove(request.id);
 
         return {
@@ -146,6 +155,8 @@ export class SignupInterface implements DataHandlerInterface<ReadSignupMessage,
             // @ts-ignore
             update.$set['role'] = request.role;
         }
+
+        _l.debug('performing a modify request with', { update });
 
         // Update database
         const result = await this._db.modify(request.id, update);

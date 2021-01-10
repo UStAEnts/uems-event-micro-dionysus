@@ -11,6 +11,9 @@ import EventResponseMessage = EventResponse.EventResponseMessage;
 import InternalEvent = EventResponse.InternalEvent;
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
 import EventServiceReadResponseMessage = EventResponse.EventServiceReadResponseMessage;
+import { _byFile } from "../../logging/Log";
+
+const _l = _byFile(__filename);
 
 export class EventInterface implements DataHandlerInterface<ReadEventMessage,
     CreateEventMessage,
@@ -184,6 +187,8 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
         };
 
         try {
+            _l.debug('performing a create request for events', { event });
+
             const result = await this._db.insert(event);
 
             if (result.id) {
@@ -196,6 +201,8 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
                 };
             }
 
+            _l.warn('create request failed because id was not provided', { result });
+
             return {
                 msg_id: request.msg_id,
                 msg_intention: 'CREATE',
@@ -204,6 +211,7 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
                 userID: request.userID,
             };
         } catch (e) {
+            _l.warn('create request failed due to a raised error', { e });
             return {
                 msg_id: request.msg_id,
                 msg_intention: 'CREATE',
@@ -215,7 +223,13 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
     }
 
     async delete(request: DeleteEventMessage): Promise<EventResponseMessage> {
+        _l.debug(`performing an events delete request for id: ${request.id}`);
+
         const result = await this._db.remove(request.id);
+
+        if (!result) {
+            _l.warn('delete request for events failed as result as falsy', { result });
+        }
 
         return {
             msg_id: request.msg_id,
@@ -261,10 +275,14 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
             update.$set['state'] = request.stateID;
         }
 
-        console.log('executing update', update);
+        _l.debug('performing an events modify request with', { update });
 
         // Update database
         const result = await (this._db as EventDatabaseInterface).modify(request.id, update);
+
+        if (!result) {
+            _l.warn('update request failed because result was falsy', { result });
+        }
 
         // Return updated result
         return {
@@ -278,6 +296,9 @@ export class EventInterface implements DataHandlerInterface<ReadEventMessage,
 
     async read(request: ReadEventMessage): Promise<EventServiceReadResponseMessage> {
         const query = EventInterface.convertReadRequestToDatabaseQuery(request);
+
+        _l.debug('performing a query for events values:', { query });
+
         const data: ShallowInternalEvent[] = await this._db.retrieve(query);
 
         // Removed undefined/null values

@@ -15,8 +15,11 @@ import EventResponseMessage = EventResponse.EventResponseMessage;
 import ShallowInternalComment = CommentResponse.ShallowInternalComment;
 import SignupResponseMessage = SignupResponse.SignupResponseMessage;
 import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
+import { _byFile } from "./logging/Log";
 
 const fs = require('fs').promises;
+
+const _l = _byFile(__filename);
 
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
@@ -43,6 +46,7 @@ async function handleUnsupportedOp(content: any): Promise<EventResponseMessage |
 
 const handleSignup = (content: any, signup: SignupInterface): Promise<SignupResponseMessage | SignupServiceReadResponseMessage> =>
     new Promise((resolve, reject) => {
+        _l.debug(`received signup message for ${content.msg_intention}`);
         switch (content.msg_intention) {
             case 'CREATE':
                 resolve(signup.create(content));
@@ -63,7 +67,7 @@ const handleSignup = (content: any, signup: SignupInterface): Promise<SignupResp
 
 const handleComment = (content: any, comment: GenericCommentDatabase): Promise<string[] | ShallowInternalComment[]> =>
     new Promise((resolve, reject) => {
-        console.log('handling comment request');
+        _l.debug(`received comment message for ${content.msg_intention}`);
         switch (content.msg_intention) {
             case 'CREATE':
                 resolve(comment.create(content));
@@ -88,8 +92,6 @@ async function reqReceived(
 ): Promise<MessageResponses | null> {
     try {
         // TODO: checks for message integrity.
-        console.log('got message with routing key', routingKey, content);
-
         if (content == null || eventDB == null || eventInterface == null || commentDB == null
             || signupDB == null || signupInterface == null) {
             // Blank (null content) messages are ignored.
@@ -98,8 +100,6 @@ async function reqReceived(
             console.log('Message content null or DB not ready!, message dropped');
             return null;
         }
-
-        console.log('trying to handle:', content.msg_intention);
 
         if (routingKey.startsWith('events.signups')) {
             return await handleSignup(content, signupInterface);
@@ -117,6 +117,8 @@ async function reqReceived(
             };
         }
 
+        _l.debug(`got an event message with intention ${content.msg_intention}`);
+
         switch (content.msg_intention) {
             case 'READ':
                 return await eventInterface.read(content);
@@ -131,8 +133,7 @@ async function reqReceived(
         }
 
     } catch (err) {
-        console.error('something went wrong');
-        console.error(err);
+        _l.error('an error was raised processing incoming message', { err });
         return {
             msg_intention: content.msg_intention,
             msg_id: content.msg_id,
@@ -149,7 +150,8 @@ async function reqReceived(
  * @param eventsConnection the resolved database object
  */
 async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
-    console.log('database connection is ready');
+
+    _l.info('database connections are setup correctly', {keys: Object.keys(eventsConnection)} );
 
     eventDB = eventsConnection.event;
     commentDB = eventsConnection.comment;
@@ -164,7 +166,7 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     );
 
     app.listen(process.env.PORT, () => {
-        console.log('Event micro dionysus started successfully');
+        _l.info('Event micro dionysus started successfully');
     });
 }
 

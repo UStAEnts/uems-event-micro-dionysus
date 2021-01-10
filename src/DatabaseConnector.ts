@@ -3,6 +3,9 @@ import * as MongoClient from 'mongodb';
 import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
 import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
 import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
+import { _byFile } from "./logging/Log";
+
+const _l = _byFile(__filename);
 
 export namespace Database {
 
@@ -17,7 +20,8 @@ export namespace Database {
             comment: zod.string(),
             signup: zod.string(),
         }),
-        options: zod.any().optional(),
+        options: zod.any()
+            .optional(),
     })
         .nonstrict();
 
@@ -33,6 +37,7 @@ export namespace Database {
         if (!validate.success) {
             throw new Error(`Failed to validate config: ${JSON.stringify(validate.error.flatten())}`);
         }
+        _l.info('database configuration was valid');
         const configuration = validate.data;
 
         try {
@@ -42,6 +47,8 @@ export namespace Database {
                 auth: configuration.auth,
                 ...configuration.options,
             });
+
+            _l.debug('mongo connection created, spawning databases');
 
             return {
                 event: new EventDatabaseInterface(client.db(configuration.mapping.event)),
