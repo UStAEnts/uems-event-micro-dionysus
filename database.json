@@ -6,7 +6,8 @@
     },
     "mapping": {
         "event": "events",
-        "ent": "ent_states"
+        "comment": "event-comments",
+        "signup": "signups"
     },
     "options": {
         "authMechanism": "SCRAM-SHA-1",
