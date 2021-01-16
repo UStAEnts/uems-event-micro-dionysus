@@ -1,34 +1,128 @@
-import { Db, FilterQuery, ObjectID } from 'mongodb';
-import { DefaultInterface } from './DefaultInterface';
+import { Collection, FilterQuery, ObjectID } from 'mongodb';
 import { SignupValidators } from '@uems/uemscommlib/build/signup/SignupValidators';
+import { SignupMessage, SignupResponse } from '@uems/uemscommlib';
+import { GenericMongoDatabase } from '@uems/micro-builder';
+import { genericCreate, genericDelete, genericUpdate } from '@uems/micro-builder/build/utility/GenericDatabaseFunctions';
+import { _byFile } from '../../../logging/Log';
 import ShallowSignupRepresentation = SignupValidators.ShallowSignupRepresentation;
+import CreateSignupMessage = SignupMessage.CreateSignupMessage;
+import ReadSignupMessage = SignupMessage.ReadSignupMessage;
+import DeleteSignupMessage = SignupMessage.DeleteSignupMessage;
+import UpdateSignupMessage = SignupMessage.UpdateSignupMessage;
+import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 
-const EVENT_DETAILS_COLLECTION = 'details';
-const EVENT_CHANGELOG_COLLECTION = 'changelog';
+const _l = _byFile(__filename);
 
-export class SignupDatabaseInterface extends DefaultInterface<FilterQuery<ShallowSignupRepresentation>, ShallowSignupRepresentation> {
+export type InDatabaseSignup = {
+    _id: ObjectID,
+    user: string,
+    event: string,
+    role: string,
+    date: number,
+};
 
-    constructor(db: Db) {
-        super(db, EVENT_DETAILS_COLLECTION, EVENT_CHANGELOG_COLLECTION);
-    }
+export type CreateInDatabaseSignup = Omit<InDatabaseSignup, '_id'>;
 
-    async insert(data: Omit<SignupValidators.ShallowSignupRepresentation, 'id'>) {
-        // @ts-ignore
-        return super.insert(data);
-    }
+const dbToIn = (db: InDatabaseSignup): ShallowSignupRepresentation => ({
+    role: db.role,
+    id: db._id.toHexString(),
+    date: db.date,
+    event: db.event,
+    user: db.user,
+});
 
-    // TODO: provide a better way to do this
-    modify = async (id: string, updated: any): Promise<boolean> => {
-        const result = await this._objects.updateOne({
-            _id: new ObjectID(id),
-        }, updated);
+const createToDB = (create: CreateSignupMessage): CreateInDatabaseSignup => ({
+    user: create.userid,
+    event: create.eventID,
+    date: Date.now(),
+    role: create.role,
+});
 
-        if (result && result.matchedCount === 1) {
-            await super.log(id, 'updated', { changes: updated.$set });
+export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, CreateSignupMessage, DeleteSignupMessage, UpdateSignupMessage, ShallowSignupRepresentation> {
 
-            return true;
+    private static convertReadRequestToDatabaseQuery(request: ReadSignupMessage) {
+        const query: FilterQuery<ShallowInternalSignup> = {};
+
+        if (request.id !== undefined) {
+            if (ObjectID.isValid(request.id)) {
+                query._id = new ObjectID(request.id);
+            } else {
+                throw new Error('Invalid ID');
+            }
         }
 
-        return false;
-    };
+        if (request.userid) {
+            query.user = request.userid;
+        }
+
+        if (request.eventID) {
+            query.event = request.eventID;
+        }
+
+        if (request.role) {
+            query.role = request.role;
+        }
+
+        if (request.date) {
+            query.date = request.date;
+        }
+
+        if (request.dateRangeBegin !== undefined) {
+            if (query.date) {
+                if (typeof (query.date) === 'object') {
+                    query.date.$gt = request.dateRangeBegin;
+                } else {
+                    throw new Error('Invalid configured date search, should not happen?');
+                }
+            } else {
+                query.date = {
+                    $gt: request.dateRangeBegin,
+                };
+            }
+        }
+
+        if (request.dateRangeEnd !== undefined) {
+            if (query.date) {
+                if (typeof (query.date) === 'object') {
+                    query.date.$lt = request.dateRangeEnd;
+                } else {
+                    throw new Error('Invalid configured date search, should not happen?');
+                }
+            } else {
+                query.date = {
+                    $lt: request.dateRangeEnd,
+                };
+            }
+        }
+
+        _l.debug('performing a query for signup values:', { query });
+
+        return query;
+    }
+
+    protected createImpl(create: SignupMessage.CreateSignupMessage, details: Collection): Promise<string[]> {
+        return genericCreate(create, createToDB, details, () => {
+            throw new Error('signup already exists');
+        }, this.log.bind(this));
+    }
+
+    protected deleteImpl(create: SignupMessage.DeleteSignupMessage, details: Collection): Promise<string[]> {
+        return genericDelete({ _id: new ObjectID(create.id) }, create.id, details, this.log.bind(this));
+    }
+
+    protected async queryImpl(
+        create: SignupMessage.ReadSignupMessage,
+        details: Collection,
+    ): Promise<ShallowSignupRepresentation[]> {
+        const query = SignupDatabase.convertReadRequestToDatabaseQuery(create);
+        return (await details.find(query)
+            .toArray()).map(dbToIn);
+    }
+
+    protected updateImpl(create: SignupMessage.UpdateSignupMessage, details: Collection): Promise<string[]> {
+        return genericUpdate(create, ['role'], details, {}, () => {
+            throw new Error('signup already exists');
+        });
+    }
+
 }
