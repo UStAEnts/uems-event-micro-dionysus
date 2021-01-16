@@ -1,8 +1,10 @@
-import { Collection, FilterQuery, ObjectID, UpdateQuery } from 'mongodb';
-import { EventMessage, EventResponse } from "@uems/uemscommlib";
-import { GenericMongoDatabase } from "@uems/micro-builder";
-import { genericCreate, genericDelete } from "@uems/micro-builder/build/utility/GenericDatabaseFunctions";
-import { ClientFacingError } from "@uems/micro-builder/build/errors/ClientFacingError";
+import {
+    Collection, Db, FilterQuery, ObjectID, UpdateQuery,
+} from 'mongodb';
+import { EventMessage, EventResponse } from '@uems/uemscommlib';
+import { GenericMongoDatabase, MongoDBConfiguration } from '@uems/micro-builder';
+import { genericCreate, genericDelete } from '@uems/micro-builder/build/utility/GenericDatabaseFunctions';
+import { ClientFacingError } from '@uems/micro-builder/build/errors/ClientFacingError';
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
 import ReadEventMessage = EventMessage.ReadEventMessage;
 import CreateEventMessage = EventMessage.CreateEventMessage;
@@ -52,6 +54,26 @@ const createToDB = (create: CreateEventMessage): CreateInDatabaseEvent => ({
 });
 
 export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, CreateEventMessage, DeleteEventMessage, UpdateEventMessage, ShallowInternalEvent> {
+
+    constructor(_configuration: MongoDBConfiguration);
+    constructor(_configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration['collections']);
+    constructor(database: Db, collections: MongoDBConfiguration['collections']);
+    constructor(configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration['collections']) {
+        super(configurationOrDB, collections);
+
+        const register = (details: Collection) => {
+            details.createIndex({ name: 'text' }, { unique: true });
+        };
+
+        if (this._details) {
+            register(this._details);
+        } else {
+            this.once('ready', () => {
+                if (!this._details) throw new Error('Details db was not initialised on ready');
+                register(this._details);
+            });
+        }
+    }
 
     private static convertReadRequestToDatabaseQuery(request: ReadEventMessage) {
         const query: FilterQuery<ShallowInternalEvent> = {};
