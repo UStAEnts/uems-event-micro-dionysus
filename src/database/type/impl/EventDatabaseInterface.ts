@@ -226,7 +226,7 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
     }
 
     protected deleteImpl(create: EventMessage.DeleteEventMessage, details: Collection): Promise<string[]> {
-        if (!ObjectID.isValid(create.id)) throw new Error('Invalid entity ID');
+        if (!ObjectID.isValid(create.id)) throw new Error('invalid entity format');
         return genericDelete({ _id: new ObjectID(create.id) }, create.id, details, this.log.bind(this));
     }
 
