@@ -1,21 +1,22 @@
 import { Database } from './DatabaseConnector';
 import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
-import { EventInterface } from './database/interface/EventInterface';
-import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
-import { CommentResponse, EventResponse, MsgStatus, SignupResponse } from '@uems/uemscommlib';
-import { GenericCommentDatabase } from "@uems/micro-builder/build/database/GenericCommentDatabase";
-import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
-import { SignupInterface } from "./database/interface/SignupInterface";
+import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
+import { CommentResponse, MsgStatus, SignupResponse, } from '@uems/uemscommlib';
+import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
+import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
+import { _byFile } from './logging/Log';
+import { ClientFacingError } from '@uems/micro-builder/build/errors/ClientFacingError';
+import { BaseSchema } from '@uems/uemscommlib/build/BaseSchema';
+import { EventValidators } from '@uems/uemscommlib/build/event/EventValidators';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
 import MessageResponses = Messaging.MessageResponses;
-import EventResponseMessage = EventResponse.EventResponseMessage;
 import ShallowInternalComment = CommentResponse.ShallowInternalComment;
-import SignupResponseMessage = SignupResponse.SignupResponseMessage;
-import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
-import { _byFile } from "./logging/Log";
+import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
+import Intentions = BaseSchema.Intentions;
+import ShallowEventRepresentation = EventValidators.ShallowEventRepresentation;
 
 const fs = require('fs').promises;
 
@@ -31,106 +32,174 @@ const RABBIT_MQ_CONFIG_PATH: string = 'rabbit-mq-config.json';
 
 export const app = express();
 
-let eventDB: EventDatabaseInterface | null = null;
-let commentDB: GenericCommentDatabase | null = null;
-let signupDB: SignupDatabaseInterface | null = null;
+let eventDatabase: EventDatabase;
+let commentDatabase: GenericCommentDatabase;
+let signupDatabase: SignupDatabase;
 
-let eventInterface: EventInterface | null = null;
-let signupInterface: SignupInterface | null = null;
+const handleSignup = (
+    content: any,
+    signup: SignupDatabase,
+): Promise<string[] | ShallowInternalSignup[]> => new Promise((resolve, reject) => {
+    _l.debug(`received signup message for ${content.msg_intention}`);
+    switch (content.msg_intention) {
+        case 'CREATE':
+            resolve(signup.create(content));
+            break;
+        case 'DELETE':
+            resolve(signup.delete(content));
+            break;
+        case 'READ':
+            resolve(signup.query(content));
+            break;
+        case 'UPDATE':
+            resolve(signup.update(content));
+            break;
+        default:
+            reject(new ClientFacingError(`invalid message intention: + ${content.msg_intention}`));
+    }
+});
 
-async function handleUnsupportedOp(content: any): Promise<EventResponseMessage | null> {
-    console.error('Unsupported operation: ');
-    console.error(content.msg_intention);
-    return null;
+const handleComment = (
+    content: any,
+    comment: GenericCommentDatabase,
+): Promise<string[] | ShallowInternalComment[]> => new Promise((resolve, reject) => {
+    _l.debug(`received comment message for ${content.msg_intention}`);
+    switch (content.msg_intention) {
+        case 'CREATE':
+            resolve(comment.create(content));
+            break;
+        case 'DELETE':
+            resolve(comment.delete(content));
+            break;
+        case 'READ':
+            resolve(comment.query(content));
+            break;
+        case 'UPDATE':
+            resolve(comment.update(content));
+            break;
+        default:
+            reject(new ClientFacingError(`invalid message intention: + ${content.msg_intention}`));
+    }
+});
+
+const handleEvent = async (content: any, event: EventDatabase): Promise<string[] | ShallowEventRepresentation[]> => {
+    _l.debug(`received comment message for ${content.msg_intention}`);
+    switch (content.msg_intention) {
+        case 'CREATE':
+            return event.create(content);
+        case 'DELETE':
+            return event.delete(content);
+        case 'READ':
+            return event.query(content);
+        case 'UPDATE':
+            return event.update(content);
+        default:
+            throw new ClientFacingError(`invalid message intention: + ${content.msg_intention}`);
+    }
+};
+
+async function wrapPromise<T>(
+    id: number,
+    intention: Intentions,
+    userID: string,
+    data: Promise<T>,
+): Promise<{
+    status: MsgStatus.SUCCESS | MsgStatus.FAIL | 500,
+    msg_id: number,
+    msg_intention: Intentions,
+    userID: string,
+    result: T | string[],
+}> {
+    try {
+        const result = await data;
+        return {
+            msg_id: id,
+            msg_intention: intention,
+            status: MsgStatus.SUCCESS,
+            userID,
+            result,
+        };
+    } catch (e) {
+        if (e instanceof ClientFacingError) {
+            return {
+                msg_id: id,
+                msg_intention: intention,
+                status: MsgStatus.FAIL,
+                userID,
+                result: [e.message],
+            };
+        }
+
+        return {
+            msg_id: id,
+            msg_intention: intention,
+            status: 500,
+            userID,
+            result: ['internal server error'],
+        };
+    }
 }
-
-const handleSignup = (content: any, signup: SignupInterface): Promise<SignupResponseMessage | SignupServiceReadResponseMessage> =>
-    new Promise((resolve, reject) => {
-        _l.debug(`received signup message for ${content.msg_intention}`);
-        switch (content.msg_intention) {
-            case 'CREATE':
-                resolve(signup.create(content));
-                break;
-            case 'DELETE':
-                resolve(signup.delete(content));
-                break;
-            case 'READ':
-                resolve(signup.read(content));
-                break;
-            case 'UPDATE':
-                resolve(signup.modify(content));
-                break;
-            default:
-                reject(new Error(`invalid message intention: + ${content.msg_intention}`));
-        }
-    });
-
-const handleComment = (content: any, comment: GenericCommentDatabase): Promise<string[] | ShallowInternalComment[]> =>
-    new Promise((resolve, reject) => {
-        _l.debug(`received comment message for ${content.msg_intention}`);
-        switch (content.msg_intention) {
-            case 'CREATE':
-                resolve(comment.create(content));
-                break;
-            case 'DELETE':
-                resolve(comment.delete(content));
-                break;
-            case 'READ':
-                resolve(comment.query(content));
-                break;
-            case 'UPDATE':
-                resolve(comment.update(content));
-                break;
-            default:
-                reject(new Error(`invalid message intention: + ${content.msg_intention}`));
-        }
-    });
 
 async function reqReceived(
     routingKey: string,
     content: any,
 ): Promise<MessageResponses | null> {
     try {
-        // TODO: checks for message integrity.
-        if (content == null || eventDB == null || eventInterface == null || commentDB == null
-            || signupDB == null || signupInterface == null) {
-            // Blank (null content) messages are ignored.
-            // If the eventsDb connector is null then the microservice isn't ready and the message is dropped.
-
-            console.log('Message content null or DB not ready!, message dropped');
+        if (content === null) {
+            _l.error('Recevied a content object that was null');
             return null;
         }
 
+        // ----
+        // -- HANDLE EVENT SIGNUPS
+        // ----
         if (routingKey.startsWith('events.signups')) {
-            return await handleSignup(content, signupInterface);
+            if (signupDatabase === undefined) {
+                _l.error('Signup database was not defined on request');
+                return null;
+            }
+
+            return await wrapPromise(
+                content.msg_id,
+                content.msg_intention,
+                content.userID,
+                handleSignup(content, signupDatabase),
+            );
         }
 
+        // ----
+        // -- HANDLE EVENT COMMENTS
+        // ----
         if (routingKey.startsWith('events.comment')) {
-            const result = await handleComment(content, commentDB);
-            console.log('comment response', result);
-            return {
-                status: 200,
-                result: result as any,
-                msg_id: content.msg_id,
-                msg_intention: content.msg_intention,
-                userID: content.userID,
-            };
+            if (commentDatabase === undefined) {
+                _l.error('Comment database was not defined on request');
+                return null;
+            }
+
+            return await wrapPromise(
+                content.msg_id,
+                content.msg_intention,
+                content.userID,
+                handleComment(content, commentDatabase),
+            );
+        }
+
+        // ----
+        // -- HANDLE EVENTS
+        // ----
+        if (eventDatabase === undefined) {
+            _l.error('Event database was not defined on request');
+            return null;
         }
 
         _l.debug(`got an event message with intention ${content.msg_intention}`);
 
-        switch (content.msg_intention) {
-            case 'READ':
-                return await eventInterface.read(content);
-            case 'CREATE':
-                return await eventInterface.create(content);
-            case 'UPDATE':
-                return await eventInterface.modify(content);
-            case 'DELETE':
-                return await eventInterface.delete(content);
-            default:
-                return handleUnsupportedOp(content);
-        }
+        return await wrapPromise(
+            content.msg_id,
+            content.msg_intention,
+            content.userID,
+            handleEvent(content, eventDatabase),
+        );
 
     } catch (err) {
         _l.error('an error was raised processing incoming message', { err });
@@ -138,7 +207,7 @@ async function reqReceived(
             msg_intention: content.msg_intention,
             msg_id: content.msg_id,
             status: MsgStatus.FAIL,
-            result: [],
+            result: ['internal server error'],
             userID: content.userID,
         };
     }
@@ -151,13 +220,11 @@ async function reqReceived(
  */
 async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
 
-    _l.info('database connections are setup correctly', {keys: Object.keys(eventsConnection)} );
+    _l.info('database connections are setup correctly', { keys: Object.keys(eventsConnection) });
 
-    eventDB = eventsConnection.event;
-    commentDB = eventsConnection.comment;
-    signupDB = eventsConnection.signup;
-    eventInterface = new EventInterface(eventDB);
-    signupInterface = new SignupInterface(signupDB);
+    eventDatabase = eventsConnection.event;
+    commentDatabase = eventsConnection.comment;
+    signupDatabase = eventsConnection.signup;
 
     await Messaging.Messenger.setup(
         RABBIT_MQ_CONFIG_PATH,
@@ -175,20 +242,20 @@ async function setup() {
     // The connection info (including username / password) is read from configuration file.
     const data = await fs.readFile('database.json', { encoding: 'utf-8' });
 
-    console.log('Database.json file opened successfully...');
+    _l.debug('Database.json file opened successfully...');
 
     const dbInfo = JSON.parse(data);
 
     Database.connect(dbInfo)
         .then(databaseConnectionReady)
         .catch((e) => {
-            console.error('Event details microservice failed to connect to database... exiting');
-            console.error(e.message);
+            _l.error('Event details microservice failed to connect to database... exiting');
+            _l.error(e.message);
             process.exit(1);
         });
 }
 
-console.log('Starting event micro dionysus...');
+_l.info('Starting event micro dionysus...');
 
 app.set('port', process.env.PORT || 15550);
 

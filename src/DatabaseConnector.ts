@@ -1,9 +1,9 @@
 import * as zod from 'zod';
 import * as MongoClient from 'mongodb';
-import { EventDatabaseInterface } from './database/type/impl/EventDatabaseInterface';
+import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
 import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
-import { SignupDatabaseInterface } from "./database/type/impl/SignupDatabaseInterface";
-import { _byFile } from "./logging/Log";
+import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
+import { _byFile } from './logging/Log';
 
 const _l = _byFile(__filename);
 
@@ -26,9 +26,9 @@ export namespace Database {
         .nonstrict();
 
     export type DatabaseConnections = {
-        event: EventDatabaseInterface,
+        event: EventDatabase,
         comment: GenericCommentDatabase,
-        signup: SignupDatabaseInterface,
+        signup: SignupDatabase,
     };
 
     // Connects the datebase connect to the mongoDB database at the given uri.
@@ -51,15 +51,21 @@ export namespace Database {
             _l.debug('mongo connection created, spawning databases');
 
             return {
-                event: new EventDatabaseInterface(client.db(configuration.mapping.event)),
+                event: new EventDatabase(client.db(configuration.mapping.event), {
+                    changelog: 'changelog',
+                    details: 'details',
+                }),
                 comment: new GenericCommentDatabase(['event'], client.db(configuration.mapping.comment), {
                     changelog: 'changes',
                     details: 'comments',
                 }),
-                signup: new SignupDatabaseInterface(client.db(configuration.mapping.signup)),
+                signup: new SignupDatabase(client.db(configuration.mapping.signup), {
+                    changelog: 'changelog',
+                    details: 'details',
+                }),
             };
         } catch (e) {
-            console.log('failed to connect to the database', e);
+            _l.error('failed to connect to the database', e);
             throw e;
         }
     }
