@@ -58,6 +58,7 @@ describe('create messages of states', () => {
         const query = await eventDB.query({
             ...empty('READ'),
             stateID: 'teacher inside',
+            entsID: 'embox dorm',
             start: 1612686824,
             attendance: 185,
         });
@@ -89,6 +90,8 @@ describe('create messages of states', () => {
             ...empty('READ'),
             startRangeBegin: 1611537344,
             startRangeEnd: 1611561728,
+            endRangeBegin: 1611561518,
+            endRangeEnd: 1611561538,
         });
 
         expect(query)
