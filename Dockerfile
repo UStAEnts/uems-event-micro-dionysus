@@ -1,13 +1,19 @@
-FROM node:12
+FROM node:14
 
 WORKDIR /user/src/uems/micro-dionysus
 
 EXPOSE 15550
 
-CMD ["npm", "run", "start:old"]
-
 COPY package*.json ./
 
 RUN npm install
 
-COPY . .
+COPY . /user/src/uems/micro-dionysus
+
+RUN ls -la
+
+RUN npm run build
+
+ENV NODE_ENV=dev
+
+CMD ["npm", "run", "start:old"]
