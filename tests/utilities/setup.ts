@@ -4,12 +4,34 @@ import MongoUnit from "mongo-unit";
 import { InDatabaseEvent } from "../../src/database/type/impl/EventDatabaseInterface";
 import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
 import Intentions = BaseSchema.Intentions;
+import { InDatabaseSignup } from "../../src/database/type/impl/SignupDatabaseInterface";
 
 winston.add(new winston.transports.Console());
 
-// venues:      doll price          | dominant weave | rubbish response | fraction fold
-// states:      explain proposal    | teacher inside | agency adoption
-// ents states: sweet deer          | embox dorm     | blow glare
+export const demoSignupData: InDatabaseSignup[] = [
+    {
+        _id: new ObjectId('6001f0d62712ee177867dcbb'),
+        role: 'witch straight',
+        date: 13040230,
+        event: 'throat machinery',
+        user: 'asylum movement',
+    },
+    {
+        _id: new ObjectId('6001f0d62712ee177867dcbc'),
+        role: 'comprehensive insist',
+        date: 122456432,
+        event: 'pick chemistry',
+        user: 'launch unlikely',
+    },
+    {
+        _id: new ObjectId('6001f0d62712ee177867dcbd'),
+        role: 'net can',
+        date: 1224354231,
+        event: 'breathe agency',
+        user: 'throughful earthquake',
+    },
+];
+
 export const demoEventData: InDatabaseEvent[] = [
     {
         _id: new ObjectId('6001f0d62712ee177867dcbb'),
