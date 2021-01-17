@@ -1,7 +1,7 @@
-import { Collection, FilterQuery, ObjectID } from 'mongodb';
+import { Collection, Db, FilterQuery, ObjectID } from 'mongodb';
 import { SignupValidators } from '@uems/uemscommlib/build/signup/SignupValidators';
 import { SignupMessage, SignupResponse } from '@uems/uemscommlib';
-import { GenericMongoDatabase } from '@uems/micro-builder';
+import { GenericMongoDatabase, MongoDBConfiguration } from '@uems/micro-builder';
 import { genericCreate, genericDelete, genericUpdate } from '@uems/micro-builder/build/utility/GenericDatabaseFunctions';
 import { _byFile } from '../../../logging/Log';
 import ShallowSignupRepresentation = SignupValidators.ShallowSignupRepresentation;
@@ -39,6 +39,27 @@ const createToDB = (create: CreateSignupMessage): CreateInDatabaseSignup => ({
 });
 
 export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, CreateSignupMessage, DeleteSignupMessage, UpdateSignupMessage, ShallowSignupRepresentation> {
+
+    constructor(_configuration: MongoDBConfiguration);
+    constructor(_configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration["collections"]);
+    constructor(database: Db, collections: MongoDBConfiguration["collections"]);
+    constructor(configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration["collections"]) {
+        super(configurationOrDB, collections);
+
+
+        const register = (details: Collection) => {
+            details.createIndex({ role: 1, user: 1, event: 1 }, { unique: true });
+        };
+
+        if (this._details) {
+            register(this._details);
+        } else {
+            this.once('ready', () => {
+                if (!this._details) throw new Error('Details db was not initialised on ready');
+                register(this._details);
+            });
+        }
+    }
 
     private static convertReadRequestToDatabaseQuery(request: ReadSignupMessage) {
         const query: FilterQuery<ShallowInternalSignup> = {};
@@ -102,7 +123,7 @@ export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, Crea
 
     protected createImpl(create: SignupMessage.CreateSignupMessage, details: Collection): Promise<string[]> {
         return genericCreate(create, createToDB, details, () => {
-            throw new Error('signup already exists');
+            throw new Error('cannot create duplicate signup');
         }, this.log.bind(this));
     }
 
