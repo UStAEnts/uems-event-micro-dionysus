@@ -239,6 +239,7 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
     }
 
     protected async updateImpl(request: EventMessage.UpdateEventMessage, details: Collection): Promise<string[]> {
+        if (!ObjectID.isValid(request.id)) throw new Error('invalid entity format');
         const update: UpdateQuery<ShallowInternalEvent> = {
             $set: {
                 ...(request.name === undefined ? undefined : { name: request.name }),
@@ -249,6 +250,9 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
                 ...(request.stateID === undefined ? undefined : { state: request.stateID }),
             },
         };
+
+        // @ts-ignore
+        if (Object.keys(update.$set).length === 0) delete update.$set;
 
         if (request.addVenues) {
             update.$addToSet = {
@@ -266,7 +270,7 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             };
         }
 
-        if (Object.keys(update.$set ?? {}).length === 0) {
+        if (Object.keys(update.$set ?? {}).length === 0 && request.removeVenues === undefined && request.addVenues === undefined) {
             throw new ClientFacingError('no operations provided');
         }
 
