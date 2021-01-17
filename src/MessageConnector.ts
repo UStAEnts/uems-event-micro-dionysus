@@ -33,8 +33,10 @@ export namespace Messaging {
     import SignupResponseSchema = SignupValidators.SignupResponseSchema;
 
     export type MessageResponses = EventResponseSchema | CommentResponseSchema | SignupResponseSchema;
-    type MessageHandler = (routingKey: string, message: any) => (MessageResponses | null)
-        | Promise<MessageResponses | null>;
+    type MessageHandler = (
+        routingKey: string,
+        message: any,
+    ) => (MessageResponses | null) | Promise<MessageResponses | null>;
 
     export class Messenger {
         // Connection to the RabbitMQ messaging system.

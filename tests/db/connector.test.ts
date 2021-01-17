@@ -1,5 +1,5 @@
-import { Database } from "../../src/DatabaseConnector";
-import MongoUnit from "mongo-unit";
+import { Database } from '../../src/DatabaseConnector';
+import MongoUnit from 'mongo-unit';
 
 jest.setTimeout(20000);
 
@@ -70,14 +70,16 @@ describe('testing database connector', () => {
             .toHaveProperty('comment');
         expect(result)
             .toHaveProperty('signup');
+
+        await result.terminate();
     });
 
     beforeAll(async () => {
         await MongoUnit.start();
-    })
+    });
 
     afterAll(async () => {
         await MongoUnit.stop();
-    })
+    });
 
 });

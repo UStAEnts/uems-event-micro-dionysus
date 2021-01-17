@@ -29,6 +29,7 @@ export namespace Database {
         event: EventDatabase,
         comment: GenericCommentDatabase,
         signup: SignupDatabase,
+        terminate: () => Promise<void>,
     };
 
     // Connects the datebase connect to the mongoDB database at the given uri.
@@ -63,6 +64,7 @@ export namespace Database {
                     changelog: 'changelog',
                     details: 'details',
                 }),
+                terminate: () => client.close(),
             };
         } catch (e) {
             _l.error('failed to connect to the database', e);
