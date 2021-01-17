@@ -20,8 +20,8 @@ export const demoSignupData: InDatabaseSignup[] = [
         _id: new ObjectId('6001f0d62712ee177867dcbc'),
         role: 'comprehensive insist',
         date: 122456432,
-        event: 'pick chemistry',
-        user: 'launch unlikely',
+        event: 'throat machinery',
+        user: 'asylum movement',
     },
     {
         _id: new ObjectId('6001f0d62712ee177867dcbd'),
