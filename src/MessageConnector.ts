@@ -74,7 +74,13 @@ export namespace Messaging {
                 return;
             }
 
-            const contentJson = JSON.parse(msg.content.toString());
+            let contentJson: any;
+            try {
+                contentJson = JSON.parse(msg.content.toString());
+            } catch (e) {
+                console.error('Did not receive a valid JSON message on the queue, rejecting');
+                return;
+            }
 
             const passesValidation = (await Promise.all(
                 // Run the message against all validators and then reduce the result
@@ -142,7 +148,7 @@ export namespace Messaging {
 
             const messenger = new Messaging.Messenger(conn, sendCh, rcvCh, msgValidators, msgCallback);
 
-            rcvCh.consume(queue.queue, async (msg) => {
+            await rcvCh.consume(queue.queue, async (msg) => {
                 await messenger.handleMsg(msg);
             }, { noAck: true });
 
@@ -152,13 +158,18 @@ export namespace Messaging {
         // Creates a new Messager to be used by the microservice for communication including receiving requests and
         // sending responses. Uses the config at the given path to configure the connection to rabbitMQ. The given
         // req_recv_callback is called if a message is received with the argument being the message content as an
-        // object.
+        // object. Connect function is given as a parameter to enable testing
         static async setup(
             configPath: string,
             reqRecvCallback: MessageHandler,
             topics: string[],
+            connectionFunction: (url: string) => Promise<Connection> = amqpConnect,
         ) {
-            const msgValidator: MessageValidator[] = [await EventMessageValidator.setup(), new CommentMessageValidator(), new SignupMessageValidator()];
+            const msgValidator: MessageValidator[] = [
+                new EventMessageValidator(),
+                new CommentMessageValidator(),
+                new SignupMessageValidator(),
+            ];
             console.log('Connecting to rabbitmq...');
             const data = await fs.readFile(configPath);
             const configJson: MqConfig = JSON.parse(data.toString());
@@ -169,9 +180,14 @@ export namespace Messaging {
                     // no-await-in-loop: used to retry an action, ignored as per
                     // https://eslint.org/docs/rules/no-await-in-loop
                     // eslint-disable-next-line no-await-in-loop
-                    const res = await amqpConnect(`${configJson.uri}?heartbeat=60`)
+                    const res = await connectionFunction(`${configJson.uri}?heartbeat=60`)
                         .then(
                             (conn: Connection) => {
+                                // Debugging implementation
+                                if (conn === undefined) {
+                                    return;
+                                }
+
                                 Messenger.configureConnection(conn, reqRecvCallback, topics, msgValidator)
                                     .then(
                                         (messenger: Messenger) => messenger,
@@ -180,7 +196,7 @@ export namespace Messaging {
                         );
                     return res;
                 } catch (e) {
-                    console.error('Failed to connect to rabbit mq');
+                    console.error('Failed to connect to rabbit mq', e);
 
                     // This forces a timeout before retrying connection.
                     // eslint-disable-next-line no-await-in-loop
