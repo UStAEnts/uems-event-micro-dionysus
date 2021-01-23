@@ -4,7 +4,7 @@ FROM node:14
 WORKDIR /user/app
 
 # Normally we want to run the cached built one
-CMD ["npm", "start:old"]
+CMD ["npm", "run", "start:old"]
 
 # This module exposes a healthcheck API for a nice docker-compose
 EXPOSE 15550
