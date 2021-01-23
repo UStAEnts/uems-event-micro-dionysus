@@ -1,10 +1,6 @@
 import { Channel, connect as amqpConnect, Connection, Message, } from 'amqplib';
 
-import { EventMessageValidator } from '@uems/uemscommlib';
-import { MessageValidator } from '@uems/uemscommlib/build/messaging/MessageValidator';
-import { CommentValidators } from "@uems/uemscommlib/build/comment/CommentValidators";
-import { SignupValidators } from "@uems/uemscommlib/build/signup/SignupValidators";
-import { EventValidators } from "@uems/uemscommlib/build/event/EventValidators";
+import { CommentMessageValidator, SignupMessageValidator, CommentResponse, EventMessageValidator, EventResponse, MessageValidator, SignupResponse } from '@uems/uemscommlib';
 
 const fs = require('fs').promises;
 
@@ -26,13 +22,12 @@ const REQUEST_EXCHANGE: string = 'request';
 const RABBIT_MQ_RETRY_TIMEOUT: number = 2000;
 
 export namespace Messaging {
-    import CommentMessageValidator = CommentValidators.CommentMessageValidator;
-    import SignupMessageValidator = SignupValidators.SignupMessageValidator;
-    import EventResponseSchema = EventValidators.EventResponseSchema;
-    import CommentResponseSchema = CommentValidators.CommentResponseSchema;
-    import SignupResponseSchema = SignupValidators.SignupResponseSchema;
 
-    export type MessageResponses = EventResponseSchema | CommentResponseSchema | SignupResponseSchema;
+    import EventResponseMessage = EventResponse.EventResponseMessage;
+    import CommentResponseMessage = CommentResponse.CommentResponseMessage;
+    import SignupResponseMessage = SignupResponse.SignupResponseMessage;
+
+    export type MessageResponses = EventResponseMessage | CommentResponseMessage | SignupResponseMessage;
     type MessageHandler = (
         routingKey: string,
         message: any,

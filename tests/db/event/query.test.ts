@@ -1,7 +1,6 @@
-import { Db, MongoClient } from "mongodb";
-import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, demoEventData, empty } from "../../utilities/setup";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
-import { EventDatabase } from "../../../src/database/type/impl/EventDatabaseInterface";
+import { Db, MongoClient } from 'mongodb';
+import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, demoEventData, empty, } from '../../utilities/setup';
+import { EventDatabase } from '../../../src/database/type/impl/EventDatabaseInterface';
 
 describe('create messages of states', () => {
     let client!: MongoClient;

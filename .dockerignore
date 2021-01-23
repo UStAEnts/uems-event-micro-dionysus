@@ -1,4 +1,10 @@
+.git/
+.github/
+node_modules/
+
+build/
+logs/
+tests/
+
 npm-debug.log
-.git
 .gitignore
-node_modules

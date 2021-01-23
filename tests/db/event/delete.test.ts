@@ -1,8 +1,8 @@
-import { Db, MongoClient } from "mongodb";
-import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, demoEventData } from "../../utilities/setup";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
+import { Db, MongoClient } from 'mongodb';
+import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, demoEventData, } from '../../utilities/setup';
+import { BaseSchema } from '@uems/uemscommlib';
+import { EventDatabase } from '../../../src/database/type/impl/EventDatabaseInterface';
 import Intentions = BaseSchema.Intentions;
-import { EventDatabase } from "../../../src/database/type/impl/EventDatabaseInterface";
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({
     msg_intention: intention,
@@ -19,7 +19,7 @@ describe('create messages of states', () => {
     beforeAll(async () => {
         const {
             client: newClient,
-            db: newDb
+            db: newDb,
         } = await defaultBeforeAll();
         client = newClient;
         db = newDb;
