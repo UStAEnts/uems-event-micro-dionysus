@@ -1,19 +1,30 @@
 FROM node:14
 
-WORKDIR /user/src/uems/micro-dionysus
+# Setup where to store the app
+WORKDIR /user/app
 
+# Normally we want to run the cached built one
+CMD ["npm", "start:old"]
+
+# This module exposes a healthcheck API for a nice docker-compose
 EXPOSE 15550
 
+# Copy in package.json file and package-lock.json if its present
+# This means that everything will be redone if the dependencies change
+# (but also if you add new scripts and stuff)
 COPY package*.json ./
 
-RUN npm install
-
-COPY . /user/src/uems/micro-dionysus
-
-RUN ls -la
-
-RUN npm run build
-
+# Mark this as a development image which will enable more in-depth logging and
+# stuff like that
 ENV NODE_ENV=dev
 
-CMD ["npm", "run", "start:old"]
+# Install the dependencies! This will be the longest step
+RUN npm install
+
+# Copy in the source files to the root of the project. These will be filtered by
+# .dockerignore
+COPY . .
+
+# As we are running 'start' this relies on the built version of the project, so build it
+# (if it is present)
+RUN npm run build --if-present
