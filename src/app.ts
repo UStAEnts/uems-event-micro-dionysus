@@ -15,6 +15,8 @@ import ShallowInternalComment = CommentResponse.ShallowInternalComment;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 import Intentions = BaseSchema.Intentions;
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
+import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
+import SignupReadResponseMessage = SignupResponse.SignupReadResponseMessage;
 
 const fs = require('fs').promises;
 
@@ -157,12 +159,13 @@ async function reqReceived(
                 return null;
             }
 
+            // TODO :: fix typing
             return await wrapPromise(
                 content.msg_id,
                 content.msg_intention,
                 content.userID,
                 handleSignup(content, signupDatabase),
-            );
+            ) as any;
         }
 
         // ----
@@ -174,12 +177,13 @@ async function reqReceived(
                 return null;
             }
 
+            // TODO :: fix typing
             return await wrapPromise(
                 content.msg_id,
                 content.msg_intention,
                 content.userID,
                 handleComment(content, commentDatabase),
-            );
+            ) as any;
         }
 
         // ----
@@ -192,12 +196,13 @@ async function reqReceived(
 
         _l.debug(`got an event message with intention ${content.msg_intention}`);
 
+        // TODO :: fix typing
         return await wrapPromise(
             content.msg_id,
             content.msg_intention,
             content.userID,
             handleEvent(content, eventDatabase),
-        );
+        ) as any;
 
     } catch (err) {
         _l.error('an error was raised processing incoming message', { err });
