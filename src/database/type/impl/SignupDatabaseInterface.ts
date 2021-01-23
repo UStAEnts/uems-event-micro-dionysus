@@ -1,10 +1,8 @@
 import { Collection, Db, FilterQuery, ObjectID } from 'mongodb';
-import { SignupValidators } from '@uems/uemscommlib/build/signup/SignupValidators';
 import { SignupMessage, SignupResponse } from '@uems/uemscommlib';
 import { GenericMongoDatabase, MongoDBConfiguration } from '@uems/micro-builder';
 import { genericCreate, genericDelete, genericUpdate } from '@uems/micro-builder/build/utility/GenericDatabaseFunctions';
 import { _byFile } from '../../../logging/Log';
-import ShallowSignupRepresentation = SignupValidators.ShallowSignupRepresentation;
 import CreateSignupMessage = SignupMessage.CreateSignupMessage;
 import ReadSignupMessage = SignupMessage.ReadSignupMessage;
 import DeleteSignupMessage = SignupMessage.DeleteSignupMessage;
@@ -23,7 +21,7 @@ export type InDatabaseSignup = {
 
 export type CreateInDatabaseSignup = Omit<InDatabaseSignup, '_id'>;
 
-const dbToIn = (db: InDatabaseSignup): ShallowSignupRepresentation => ({
+const dbToIn = (db: InDatabaseSignup): ShallowInternalSignup => ({
     role: db.role,
     id: db._id.toHexString(),
     date: db.date,
@@ -38,7 +36,7 @@ const createToDB = (create: CreateSignupMessage): CreateInDatabaseSignup => ({
     role: create.role,
 });
 
-export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, CreateSignupMessage, DeleteSignupMessage, UpdateSignupMessage, ShallowSignupRepresentation> {
+export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, CreateSignupMessage, DeleteSignupMessage, UpdateSignupMessage, ShallowInternalSignup> {
 
     constructor(_configuration: MongoDBConfiguration);
     constructor(_configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration["collections"]);
@@ -135,7 +133,7 @@ export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, Crea
     protected async queryImpl(
         create: SignupMessage.ReadSignupMessage,
         details: Collection,
-    ): Promise<ShallowSignupRepresentation[]> {
+    ): Promise<ShallowInternalSignup[]> {
         const query = SignupDatabase.convertReadRequestToDatabaseQuery(create);
         return (await details.find(query)
             .toArray()).map(dbToIn);

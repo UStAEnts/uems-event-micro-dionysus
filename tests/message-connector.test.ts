@@ -3,8 +3,6 @@ import Messenger = Messaging.Messenger;
 import tmp from "tmp";
 import * as fs from "fs";
 import { Connection, ConsumeMessage } from "amqplib";
-import { FileBindingValidators } from "@uems/uemscommlib/build/filebinding/FileBindingValidators";
-import UNBIND_FILES_FROM_EVENT_MESSAGE = FileBindingValidators.UNBIND_FILES_FROM_EVENT_MESSAGE;
 
 const promiseTimeout = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 

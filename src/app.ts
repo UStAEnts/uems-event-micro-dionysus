@@ -2,13 +2,11 @@ import { Database } from './DatabaseConnector';
 import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
 import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
-import { CommentResponse, MsgStatus, SignupResponse, } from '@uems/uemscommlib';
+import { CommentResponse, MsgStatus, SignupResponse, BaseSchema, EventResponse } from '@uems/uemscommlib';
 import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
 import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
 import { ClientFacingError } from '@uems/micro-builder/build/errors/ClientFacingError';
-import { BaseSchema } from '@uems/uemscommlib/build/BaseSchema';
-import { EventValidators } from '@uems/uemscommlib/build/event/EventValidators';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
@@ -16,7 +14,7 @@ import MessageResponses = Messaging.MessageResponses;
 import ShallowInternalComment = CommentResponse.ShallowInternalComment;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 import Intentions = BaseSchema.Intentions;
-import ShallowEventRepresentation = EventValidators.ShallowEventRepresentation;
+import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
 
 const fs = require('fs').promises;
 
@@ -82,7 +80,7 @@ const handleComment = (
     }
 });
 
-const handleEvent = async (content: any, event: EventDatabase): Promise<string[] | ShallowEventRepresentation[]> => {
+const handleEvent = async (content: any, event: EventDatabase): Promise<string[] | ShallowInternalEvent[]> => {
     _l.debug(`received comment message for ${content.msg_intention}`);
     switch (content.msg_intention) {
         case 'CREATE':

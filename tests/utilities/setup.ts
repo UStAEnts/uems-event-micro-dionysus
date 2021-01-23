@@ -1,10 +1,10 @@
-import winston from "winston";
-import { Db, MongoClient, ObjectId } from "mongodb";
-import MongoUnit from "mongo-unit";
-import { InDatabaseEvent } from "../../src/database/type/impl/EventDatabaseInterface";
-import { BaseSchema } from "@uems/uemscommlib/build/BaseSchema";
+import winston from 'winston';
+import { Db, MongoClient, ObjectId } from 'mongodb';
+import MongoUnit from 'mongo-unit';
+import { InDatabaseEvent } from '../../src/database/type/impl/EventDatabaseInterface';
+import { BaseSchema } from '@uems/uemscommlib';
+import { InDatabaseSignup } from '../../src/database/type/impl/SignupDatabaseInterface';
 import Intentions = BaseSchema.Intentions;
-import { InDatabaseSignup } from "../../src/database/type/impl/SignupDatabaseInterface";
 
 winston.add(new winston.transports.Console());
 
@@ -87,7 +87,7 @@ export async function defaultBeforeAll(): Promise<{ client: MongoClient, db: Db 
 
     return {
         client,
-        db
+        db,
     };
 }
 
