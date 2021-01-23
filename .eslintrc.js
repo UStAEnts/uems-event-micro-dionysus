@@ -16,7 +16,9 @@ module.exports = {
         '@typescript-eslint',
     ],
     rules: {
-        indent: ['error', 4],
+        indent: ['error', 4, {
+            SwitchCase: 1,
+        }],
         '@typescript-eslint/naming-convention': [
             'error',
             {
@@ -29,5 +31,7 @@ module.exports = {
         'import/order': ['off'],
         'import/prefer-default-export': ['off'],
         'max-len': ['error', 120],
+        'no-underscore-dangle': ['off'],
+        'padded-blocks': ['off'],
     },
 };
