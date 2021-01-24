@@ -3,10 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "clean": "rm -r build/ || true",
     "build": "tsc --listEmittedFiles",
-    "start:old": "node -r source-map-support/register --trace-warnings ./build/app.js",
-    "start": "npm run build && npm run start:old",
-    "debug": "SET DEBUG=uems-event-micro-dionysus:* & npm start",
+    "start": "node -r source-map-support/register --trace-warnings ./build/src/app.js",
+    "start:dev": "NODE_ENV=dev ts-node --files ./src/app.js",
     "test": "jest --runInBand"
   },
   "dependencies": {
@@ -43,6 +43,7 @@
     "mongodb": "^3.6.3",
     "tmp": "^0.2.1",
     "ts-jest": "^26.4.4",
+    "ts-node": "^9.1.1",
     "typescript": "^3.9.5"
   }
 }
