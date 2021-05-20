@@ -1,9 +1,9 @@
 import * as zod from 'zod';
 import * as MongoClient from 'mongodb';
 import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
-import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
 import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
+import { GenericCommentDatabase } from '@uems/micro-builder/build/src';
 
 const _l = _byFile(__filename);
 

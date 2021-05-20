@@ -2,14 +2,12 @@ import {
     Collection, Db, FilterQuery, ObjectID, UpdateQuery,
 } from 'mongodb';
 import { EventMessage, EventResponse } from '@uems/uemscommlib';
-import { GenericMongoDatabase, MongoDBConfiguration } from '@uems/micro-builder';
-import { genericCreate, genericDelete } from '@uems/micro-builder/build/utility/GenericDatabaseFunctions';
-import { ClientFacingError } from '@uems/micro-builder/build/errors/ClientFacingError';
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
 import ReadEventMessage = EventMessage.ReadEventMessage;
 import CreateEventMessage = EventMessage.CreateEventMessage;
 import DeleteEventMessage = EventMessage.DeleteEventMessage;
 import UpdateEventMessage = EventMessage.UpdateEventMessage;
+import { ClientFacingError, genericCreate, genericDelete, GenericMongoDatabase, MongoDBConfiguration } from "@uems/micro-builder/build/src";
 
 // TODO: move to uems comms library
 export type Changelog = {

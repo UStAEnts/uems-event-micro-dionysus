@@ -1,13 +1,16 @@
-import { Collection, Db, FilterQuery, ObjectID } from 'mongodb';
+import {
+    Collection, Db, FilterQuery, ObjectID,
+} from 'mongodb';
 import { SignupMessage, SignupResponse } from '@uems/uemscommlib';
-import { GenericMongoDatabase, MongoDBConfiguration } from '@uems/micro-builder';
-import { genericCreate, genericDelete, genericUpdate } from '@uems/micro-builder/build/utility/GenericDatabaseFunctions';
 import { _byFile } from '../../../logging/Log';
 import CreateSignupMessage = SignupMessage.CreateSignupMessage;
 import ReadSignupMessage = SignupMessage.ReadSignupMessage;
 import DeleteSignupMessage = SignupMessage.DeleteSignupMessage;
 import UpdateSignupMessage = SignupMessage.UpdateSignupMessage;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
+import {
+    genericCreate, genericDelete, GenericMongoDatabase, genericUpdate, MongoDBConfiguration,
+} from '@uems/micro-builder/build/src';
 
 const _l = _byFile(__filename);
 
@@ -39,14 +42,17 @@ const createToDB = (create: CreateSignupMessage): CreateInDatabaseSignup => ({
 export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, CreateSignupMessage, DeleteSignupMessage, UpdateSignupMessage, ShallowInternalSignup> {
 
     constructor(_configuration: MongoDBConfiguration);
-    constructor(_configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration["collections"]);
-    constructor(database: Db, collections: MongoDBConfiguration["collections"]);
-    constructor(configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration["collections"]) {
+    constructor(_configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration['collections']);
+    constructor(database: Db, collections: MongoDBConfiguration['collections']);
+    constructor(configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration['collections']) {
         super(configurationOrDB, collections);
 
-
         const register = (details: Collection) => {
-            details.createIndex({ role: 1, user: 1, event: 1 }, { unique: true });
+            details.createIndex({
+                role: 1,
+                user: 1,
+                event: 1,
+            }, { unique: true });
         };
 
         if (this._details) {

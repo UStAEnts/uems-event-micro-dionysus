@@ -3,10 +3,8 @@ import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
 import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
 import { CommentResponse, MsgStatus, SignupResponse, BaseSchema, EventResponse } from '@uems/uemscommlib';
-import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
 import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
-import { ClientFacingError } from '@uems/micro-builder/build/errors/ClientFacingError';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
@@ -15,8 +13,7 @@ import ShallowInternalComment = CommentResponse.ShallowInternalComment;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 import Intentions = BaseSchema.Intentions;
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
-import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
-import SignupReadResponseMessage = SignupResponse.SignupReadResponseMessage;
+import { ClientFacingError, GenericCommentDatabase } from '@uems/micro-builder/build/src';
 
 const fs = require('fs').promises;
 
