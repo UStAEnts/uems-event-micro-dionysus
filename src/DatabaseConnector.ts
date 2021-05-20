@@ -3,7 +3,7 @@ import * as MongoClient from 'mongodb';
 import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
 import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
-import { GenericCommentDatabase } from '@uems/micro-builder/build/src';
+import { GenericCommentDatabase, tryApplyTrait } from '@uems/micro-builder/build/src';
 
 const _l = _byFile(__filename);
 
@@ -36,6 +36,7 @@ export namespace Database {
     export async function connect(config: any): Promise<DatabaseConnections> {
         const validate = CONFIG_VALIDATOR.safeParse(config);
         if (!validate.success) {
+            tryApplyTrait('database', false);
             throw new Error(`Failed to validate config: ${JSON.stringify(validate.error.flatten())}`);
         }
         _l.info('database configuration was valid');
@@ -68,6 +69,7 @@ export namespace Database {
             };
         } catch (e) {
             _l.error('failed to connect to the database', e);
+            tryApplyTrait('database', false);
             throw e;
         }
     }

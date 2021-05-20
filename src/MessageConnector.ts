@@ -1,6 +1,7 @@
 import { Channel, connect as amqpConnect, Connection, Message, } from 'amqplib';
 
 import { CommentMessageValidator, SignupMessageValidator, CommentResponse, EventMessageValidator, EventResponse, MessageValidator, SignupResponse } from '@uems/uemscommlib';
+import { tryApplyTrait } from "@uems/micro-builder/build/src";
 
 const fs = require('fs').promises;
 
@@ -118,10 +119,12 @@ export namespace Messaging {
             conn.on('error', (err: Error) => {
                 if (err.message !== 'Connection closing') {
                     console.error('[AMQP] conn error', err.message);
+                    tryApplyTrait('rabbitmq', false);
                 }
             });
             conn.on('close', () => {
                 console.error('[AMQP] connection closed');
+                tryApplyTrait('rabbitmq', false);
             });
             console.log('[AMQP] connected');
 
@@ -192,6 +195,7 @@ export namespace Messaging {
                     return res;
                 } catch (e) {
                     console.error('Failed to connect to rabbit mq', e);
+                    tryApplyTrait('rabbitmq', false);
 
                     // This forces a timeout before retrying connection.
                     // eslint-disable-next-line no-await-in-loop
