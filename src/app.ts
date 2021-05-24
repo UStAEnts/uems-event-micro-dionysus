@@ -2,11 +2,9 @@ import { Database } from './DatabaseConnector';
 import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
 import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
-import { CommentResponse, MsgStatus, SignupResponse, BaseSchema, EventResponse } from '@uems/uemscommlib';
-import { GenericCommentDatabase } from '@uems/micro-builder/build/database/GenericCommentDatabase';
+import { CommentResponse, MsgStatus, SignupResponse, BaseSchema, EventResponse, has } from '@uems/uemscommlib';
 import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
-import { ClientFacingError } from '@uems/micro-builder/build/errors/ClientFacingError';
 import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
@@ -15,8 +13,29 @@ import ShallowInternalComment = CommentResponse.ShallowInternalComment;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 import Intentions = BaseSchema.Intentions;
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
-import SignupServiceReadResponseMessage = SignupResponse.SignupServiceReadResponseMessage;
-import SignupReadResponseMessage = SignupResponse.SignupReadResponseMessage;
+import { ClientFacingError, GenericCommentDatabase, launchCheck, tryApplyTrait } from '@uems/micro-builder/build/src';
+
+// @ts-ignore
+const requestTracker: ('success' | 'fail')[] & { save: (d: 'success' | 'fail') => void } = [];
+requestTracker.save = function save(d) {
+    if (requestTracker.length >= 50) requestTracker.shift();
+    requestTracker.push(d);
+    tryApplyTrait('successful', requestTracker.filter((e) => e === 'success').length);
+    tryApplyTrait('fail', requestTracker.filter((e) => e === 'fail').length);
+};
+
+launchCheck(['successful', 'errored', 'rabbitmq', 'database'], (traits: Record<string, any>) => {
+    if (has(traits, 'rabbitmq') && traits.rabbitmq !== '_undefined' && !traits.rabbitmq) return 'unhealthy';
+    if (has(traits, 'database') && traits.database !== '_undefined' && !traits.database) return 'unhealthy';
+
+    // If 75% of results fail then we return false
+    if (has(traits, 'successful') && has(traits, 'errored')) {
+        const errorPercentage = traits.errored / (traits.successful + traits.errored);
+        if (errorPercentage > 0.05) return 'unhealthy-serving';
+    }
+
+    return 'healthy';
+});
 
 const fs = require('fs').promises;
 
@@ -43,18 +62,23 @@ const handleSignup = (
     _l.debug(`received signup message for ${content.msg_intention}`);
     switch (content.msg_intention) {
         case 'CREATE':
+            requestTracker.save('success');
             resolve(signup.create(content));
             break;
         case 'DELETE':
+            requestTracker.save('success');
             resolve(signup.delete(content));
             break;
         case 'READ':
+            requestTracker.save('success');
             resolve(signup.query(content));
             break;
         case 'UPDATE':
+            requestTracker.save('success');
             resolve(signup.update(content));
             break;
         default:
+            requestTracker.save('fail');
             reject(new ClientFacingError(`invalid message intention: + ${content.msg_intention}`));
     }
 });
@@ -66,18 +90,23 @@ const handleComment = (
     _l.debug(`received comment message for ${content.msg_intention}`);
     switch (content.msg_intention) {
         case 'CREATE':
+            requestTracker.save('success');
             resolve(comment.create(content));
             break;
         case 'DELETE':
+            requestTracker.save('success');
             resolve(comment.delete(content));
             break;
         case 'READ':
+            requestTracker.save('success');
             resolve(comment.query(content));
             break;
         case 'UPDATE':
+            requestTracker.save('success');
             resolve(comment.update(content));
             break;
         default:
+            requestTracker.save('fail');
             reject(new ClientFacingError(`invalid message intention: + ${content.msg_intention}`));
     }
 });
@@ -86,14 +115,19 @@ const handleEvent = async (content: any, event: EventDatabase): Promise<string[]
     _l.debug(`received comment message for ${content.msg_intention}`);
     switch (content.msg_intention) {
         case 'CREATE':
+            requestTracker.save('success');
             return event.create(content);
         case 'DELETE':
+            requestTracker.save('success');
             return event.delete(content);
         case 'READ':
+            requestTracker.save('success');
             return event.query(content);
         case 'UPDATE':
+            requestTracker.save('success');
             return event.update(content);
         default:
+            requestTracker.save('fail');
             throw new ClientFacingError(`invalid message intention: + ${content.msg_intention}`);
     }
 };
@@ -222,7 +256,7 @@ async function reqReceived(
  * @param eventsConnection the resolved database object
  */
 async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
-
+    tryApplyTrait('database', true);
     _l.info('database connections are setup correctly', { keys: Object.keys(eventsConnection) });
 
     eventDatabase = eventsConnection.event;
@@ -234,6 +268,8 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
         reqReceived,
         [EVENT_DETAILS_SERVICE_TOPIC, EVENT_COMMENTS_SERVICE_TOPIC, EVENT_SIGNUPS_SERVICE_TOPIC],
     );
+
+    tryApplyTrait('rabbitmq', true);
 
     app.listen(process.env.PORT, () => {
         _l.info('Event micro dionysus started successfully');
@@ -254,6 +290,7 @@ async function setup() {
         .catch((e) => {
             _l.error('Event details microservice failed to connect to database... exiting');
             _l.error(e.message);
+            tryApplyTrait('database', false);
             process.exit(1);
         });
 }
