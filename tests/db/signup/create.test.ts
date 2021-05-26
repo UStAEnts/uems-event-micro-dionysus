@@ -29,7 +29,6 @@ describe('create messages of states', () => {
         const create = await signupDB.create({
             ...empty('CREATE'),
             role: 'role creation',
-            userid: 'role user',
             eventID: 'event ID',
         });
 
@@ -57,7 +56,6 @@ describe('create messages of states', () => {
         const first = await signupDB.create({
             ...empty('CREATE'),
             role: 'role creation',
-            userid: 'role user',
             eventID: 'event ID',
         });
 
@@ -69,7 +67,6 @@ describe('create messages of states', () => {
         await expect(signupDB.create({
             ...empty('CREATE'),
             role: 'role creation',
-            userid: 'role user',
             eventID: 'event ID',
         }))
             .rejects
@@ -80,7 +77,6 @@ describe('create messages of states', () => {
         const create = await signupDB.create({
             ...empty('CREATE'),
             role: 'role creation',
-            userid: 'role user',
             eventID: 'event ID',
             // @ts-ignore
             invalidOne: 'one',
