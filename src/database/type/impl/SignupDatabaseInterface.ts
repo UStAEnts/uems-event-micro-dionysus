@@ -33,7 +33,7 @@ const dbToIn = (db: InDatabaseSignup): ShallowInternalSignup => ({
 });
 
 const createToDB = (create: CreateSignupMessage): CreateInDatabaseSignup => ({
-    user: create.userid,
+    user: create.userID,
     event: create.eventID,
     date: Date.now(),
     role: create.role,
@@ -76,8 +76,8 @@ export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, Crea
             }
         }
 
-        if (request.userid) {
-            query.user = request.userid;
+        if (request.userID) {
+            query.user = request.userID;
         }
 
         if (request.eventID) {

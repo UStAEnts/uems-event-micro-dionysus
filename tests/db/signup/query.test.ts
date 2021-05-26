@@ -44,7 +44,6 @@ describe('create messages of states', () => {
     it('should support querying by assorted properties', async () => {
         const query = await signupDB.query({
             ...empty('READ'),
-            userid: 'throughful earthquake',
             eventID: 'breathe agency',
             date: 1224354231,
         });
