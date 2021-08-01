@@ -7,7 +7,8 @@
     "build": "tsc --listEmittedFiles",
     "start": "node -r source-map-support/register --trace-warnings ./build/src/app.js",
     "start:dev": "NODE_ENV=dev ts-node --files ./src/app.ts",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "dockerless": "UEMS_HEALTHCHECK=7778 NODE_ENV=dev npm run start:dev"
   },
   "dependencies": {
     "@types/amqplib": "^0.5.13",
