@@ -1,3 +1,16 @@
 {
-    "uri": "amqp://dionysus:attackchairaccess@rabbit-uems:5672/"
+  "gateway": "gateway",
+  "request": "request",
+  "inbox": "dionysus_inbox",
+  "topics": [
+    "events.details.*",
+    "events.comment.*",
+    "events.signups.*"
+  ],
+  "options": {
+    "hostname": "localhost",
+    "port": 5672,
+    "username": "rdadmin",
+    "password": "5PeztA2*^wGETm8qce*9"
+  }
 }

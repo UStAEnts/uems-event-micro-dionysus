@@ -1,7 +1,7 @@
 import * as zod from 'zod';
 import * as MongoClient from 'mongodb';
-import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
-import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
+import { EventDatabase } from './database/EventDatabaseInterface';
+import { SignupDatabase } from './database/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
 import { GenericCommentDatabase, tryApplyTrait } from '@uems/micro-builder/build/src';
 

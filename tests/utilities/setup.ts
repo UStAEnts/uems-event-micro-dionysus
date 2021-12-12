@@ -1,9 +1,9 @@
 import winston from 'winston';
 import { Db, MongoClient, ObjectId } from 'mongodb';
 import MongoUnit from 'mongo-unit';
-import { InDatabaseEvent } from '../../src/database/type/impl/EventDatabaseInterface';
+import { InDatabaseEvent } from '../../src/database/EventDatabaseInterface';
 import { BaseSchema } from '@uems/uemscommlib';
-import { InDatabaseSignup } from '../../src/database/type/impl/SignupDatabaseInterface';
+import { InDatabaseSignup } from '../../src/database/SignupDatabaseInterface';
 import Intentions = BaseSchema.Intentions;
 
 winston.add(new winston.transports.Console());
