@@ -2,7 +2,7 @@ import {
     Collection, Db, FilterQuery, ObjectID,
 } from 'mongodb';
 import { SignupMessage, SignupResponse } from '@uems/uemscommlib';
-import { _byFile } from '../../../logging/Log';
+import { _byFile } from '../logging/Log';
 import CreateSignupMessage = SignupMessage.CreateSignupMessage;
 import ReadSignupMessage = SignupMessage.ReadSignupMessage;
 import DeleteSignupMessage = SignupMessage.DeleteSignupMessage;

@@ -1,6 +1,6 @@
 import { Db, MongoClient } from 'mongodb';
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, demoEventData, empty, } from '../../utilities/setup';
-import { EventDatabase } from '../../../src/database/type/impl/EventDatabaseInterface';
+import { EventDatabase } from '../../../src/database/EventDatabaseInterface';
 
 describe('create messages of states', () => {
     let client!: MongoClient;

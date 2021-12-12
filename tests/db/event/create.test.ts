@@ -1,7 +1,7 @@
 import { Db, MongoClient } from 'mongodb';
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, haveNoAdditionalKeys, } from '../../utilities/setup';
 import { BaseSchema } from '@uems/uemscommlib';
-import { EventDatabase } from '../../../src/database/type/impl/EventDatabaseInterface';
+import { EventDatabase } from '../../../src/database/EventDatabaseInterface';
 import Intentions = BaseSchema.Intentions;
 
 const empty = <T extends Intentions>(intention: T): { msg_intention: T, msg_id: 0, status: 0, userID: string } => ({

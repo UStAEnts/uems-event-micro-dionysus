@@ -1,9 +1,9 @@
 import { Database } from './DatabaseConnector';
 import { Messaging } from './MessageConnector';
 import morgan from 'morgan';
-import { EventDatabase } from './database/type/impl/EventDatabaseInterface';
-import { CommentResponse, MsgStatus, SignupResponse, BaseSchema, EventResponse, has } from '@uems/uemscommlib';
-import { SignupDatabase } from './database/type/impl/SignupDatabaseInterface';
+import { EventDatabase } from './database/EventDatabaseInterface';
+import { CommentResponse, MsgStatus, SignupResponse, BaseSchema, EventResponse, has, CommentMessage, EventMessage, SignupMessage } from '@uems/uemscommlib';
+import { SignupDatabase } from './database/SignupDatabaseInterface';
 import { _byFile } from './logging/Log';
 import express = require('express');
 import cookieParser = require('cookie-parser');
@@ -13,7 +13,15 @@ import ShallowInternalComment = CommentResponse.ShallowInternalComment;
 import ShallowInternalSignup = SignupResponse.ShallowInternalSignup;
 import Intentions = BaseSchema.Intentions;
 import ShallowInternalEvent = EventResponse.ShallowInternalEvent;
-import { ClientFacingError, GenericCommentDatabase, launchCheck, tryApplyTrait } from '@uems/micro-builder/build/src';
+import { ClientFacingError, GenericCommentDatabase, launchCheck, MessagingConfiguration, RabbitNetworkHandler, tryApplyTrait } from '@uems/micro-builder/build/src';
+import { handleSignupMessage } from "./binding/SignupBinding";
+import { handleEventMessage } from "./binding/EventBinding";
+import { handleCommentMessage } from "./binding/CommentBinding";
+import * as zod from 'zod';
+import { Options } from "amqplib";
+import { EventValidators } from "@uems/uemscommlib/build/event/EventValidators";
+import { SignupValidators } from "@uems/uemscommlib/build/signup/SignupValidators";
+import { CommentValidators } from "@uems/uemscommlib/build/comment/CommentValidators";
 
 // @ts-ignore
 const requestTracker: ('success' | 'fail')[] & { save: (d: 'success' | 'fail') => void } = [];
@@ -41,6 +49,33 @@ const fs = require('fs').promises;
 
 const _l = _byFile(__filename);
 
+type GenericMessageTypes = CommentMessage.CommentMessage | EventMessage.EventMessage | SignupMessage.SignupMessage;
+type CreateMessageTypes =
+    CommentMessage.CreateCommentMessage
+    | EventMessage.CreateEventMessage
+    | SignupMessage.CreateSignupMessage;
+type DeleteMessageTypes =
+    CommentMessage.DeleteCommentMessage
+    | EventMessage.DeleteEventMessage
+    | SignupMessage.DeleteSignupMessage;
+type UpdateMessageTypes =
+    CommentMessage.UpdateCommentMessage
+    | EventMessage.UpdateEventMessage
+    | SignupMessage.UpdateSignupMessage;
+type ReadMessageTypes =
+    CommentMessage.ReadCommentMessage
+    | EventMessage.ReadEventMessage
+    | SignupMessage.ReadSignupMessage;
+type ResponseMessageTypes =
+    CommentResponse.CommentResponseMessage
+    | EventResponse.EventResponseMessage
+    | SignupResponse.SignupResponseMessage;
+type ReadResponseMessageTypes =
+    CommentResponse.CommentServiceReadResponseMessage
+    | EventResponse.EventServiceReadResponseMessage
+    | SignupResponse.SignupServiceReadResponseMessage;
+export type RabbitBrokerType = RabbitNetworkHandler<GenericMessageTypes, CreateMessageTypes, DeleteMessageTypes, ReadMessageTypes, UpdateMessageTypes, ResponseMessageTypes | ReadResponseMessageTypes>;
+
 // The topic used for messages destined to microservices of this type.
 const EVENT_DETAILS_SERVICE_TOPIC: string = 'events.details.*';
 const EVENT_COMMENTS_SERVICE_TOPIC: string = 'events.comment.*';
@@ -55,199 +90,53 @@ let eventDatabase: EventDatabase;
 let commentDatabase: GenericCommentDatabase;
 let signupDatabase: SignupDatabase;
 
-const handleSignup = (
-    content: any,
-    signup: SignupDatabase,
-): Promise<string[] | ShallowInternalSignup[]> => new Promise((resolve, reject) => {
-    _l.debug(`received signup message for ${content.msg_intention}`);
-    switch (content.msg_intention) {
-        case 'CREATE':
-            requestTracker.save('success');
-            resolve(signup.create(content));
-            break;
-        case 'DELETE':
-            requestTracker.save('success');
-            resolve(signup.delete(content));
-            break;
-        case 'READ':
-            requestTracker.save('success');
-            resolve(signup.query(content));
-            break;
-        case 'UPDATE':
-            requestTracker.save('success');
-            resolve(signup.update(content));
-            break;
-        default:
-            requestTracker.save('fail');
-            reject(new ClientFacingError(`invalid message intention: + ${content.msg_intention}`));
-    }
-});
+async function loadMessengerConfiguration(): Promise<MessagingConfiguration> {
+    const configValidator = zod.object({
+        options: zod.any()
+            .optional() as zod.ZodType<Options.Connect>,
+        gateway: zod.string(),
+        request: zod.string(),
+        inbox: zod.string(),
+        topics: zod.array(zod.string()),
+    });
 
-const handleComment = (
-    content: any,
-    comment: GenericCommentDatabase,
-): Promise<string[] | ShallowInternalComment[]> => new Promise((resolve, reject) => {
-    _l.debug(`received comment message for ${content.msg_intention}`);
-    switch (content.msg_intention) {
-        case 'CREATE':
-            requestTracker.save('success');
-            resolve(comment.create(content));
-            break;
-        case 'DELETE':
-            requestTracker.save('success');
-            resolve(comment.delete(content));
-            break;
-        case 'READ':
-            requestTracker.save('success');
-            resolve(comment.query(content));
-            break;
-        case 'UPDATE':
-            requestTracker.save('success');
-            resolve(comment.update(content));
-            break;
-        default:
-            requestTracker.save('fail');
-            reject(new ClientFacingError(`invalid message intention: + ${content.msg_intention}`));
-    }
-});
-
-const handleEvent = async (content: any, event: EventDatabase): Promise<string[] | ShallowInternalEvent[]> => {
-    _l.debug(`received comment message for ${content.msg_intention}`);
-    switch (content.msg_intention) {
-        case 'CREATE':
-            requestTracker.save('success');
-            return event.create(content);
-        case 'DELETE':
-            requestTracker.save('success');
-            return event.delete(content);
-        case 'READ':
-            requestTracker.save('success');
-            return event.query(content);
-        case 'UPDATE':
-            requestTracker.save('success');
-            return event.update(content);
-        default:
-            requestTracker.save('fail');
-            throw new ClientFacingError(`invalid message intention: + ${content.msg_intention}`);
-    }
-};
-
-async function wrapPromise<T>(
-    id: number,
-    intention: Intentions,
-    userID: string,
-    data: Promise<T>,
-): Promise<{
-    status: MsgStatus.SUCCESS | MsgStatus.FAIL | 500,
-    msg_id: number,
-    msg_intention: Intentions,
-    userID: string,
-    result: T | string[],
-}> {
+    const file = await fs.readFile(RABBIT_MQ_CONFIG_PATH, { encoding: 'utf8' });
+    let parsed: any;
     try {
-        const result = await data;
-        return {
-            msg_id: id,
-            msg_intention: intention,
-            status: MsgStatus.SUCCESS,
-            userID,
-            result,
-        };
+        parsed = JSON.parse(file);
     } catch (e) {
-        if (e instanceof ClientFacingError) {
-            return {
-                msg_id: id,
-                msg_intention: intention,
-                status: MsgStatus.FAIL,
-                userID,
-                result: [e.message],
-            };
-        }
-
-        return {
-            msg_id: id,
-            msg_intention: intention,
-            status: 500,
-            userID,
-            result: ['internal server error'],
-        };
+        _l.error(`Invalid configuration, JSON is not valid: ${e.message}`);
+        process.exit(1);
     }
+
+    const zParse = configValidator.safeParse(parsed);
+    if (!zParse.success) {
+        _l.error(`Invalid configuration, structure is not valid: ${zParse.error.message}`);
+        process.exit(1);
+    }
+
+    return zParse.data;
 }
 
-async function reqReceived(
-    routingKey: string,
-    content: any,
-): Promise<MessageResponses | null> {
-    try {
-        if (content === null) {
-            _l.error('Recevied a content object that was null');
-            return null;
-        }
-
-        // ----
-        // -- HANDLE EVENT SIGNUPS
-        // ----
+function bind(broker: RabbitBrokerType) {
+    const handle = async (
+        message: GenericMessageTypes,
+        send: (r: ResponseMessageTypes | ReadResponseMessageTypes) => void,
+        routingKey: string,
+    ) => {
         if (routingKey.startsWith('events.signups')) {
-            if (signupDatabase === undefined) {
-                _l.error('Signup database was not defined on request');
-                return null;
-            }
-
-            // TODO :: fix typing
-            return await wrapPromise(
-                content.msg_id,
-                content.msg_intention,
-                content.userID,
-                handleSignup(content, signupDatabase),
-            ) as any;
+            await handleSignupMessage(message as SignupMessage.SignupMessage, signupDatabase, send);
+        } else if (routingKey.startsWith('events.comment')) {
+            await handleCommentMessage(message as CommentMessage.CommentMessage, commentDatabase, send);
+        } else {
+            await handleEventMessage(message as EventMessage.EventMessage, eventDatabase, send);
         }
+    };
 
-        // ----
-        // -- HANDLE EVENT COMMENTS
-        // ----
-        if (routingKey.startsWith('events.comment')) {
-            if (commentDatabase === undefined) {
-                _l.error('Comment database was not defined on request');
-                return null;
-            }
-
-            // TODO :: fix typing
-            return await wrapPromise(
-                content.msg_id,
-                content.msg_intention,
-                content.userID,
-                handleComment(content, commentDatabase),
-            ) as any;
-        }
-
-        // ----
-        // -- HANDLE EVENTS
-        // ----
-        if (eventDatabase === undefined) {
-            _l.error('Event database was not defined on request');
-            return null;
-        }
-
-        _l.debug(`got an event message with intention ${content.msg_intention}`);
-
-        // TODO :: fix typing
-        return await wrapPromise(
-            content.msg_id,
-            content.msg_intention,
-            content.userID,
-            handleEvent(content, eventDatabase),
-        ) as any;
-
-    } catch (err) {
-        _l.error('an error was raised processing incoming message', { err });
-        return {
-            msg_intention: content.msg_intention,
-            msg_id: content.msg_id,
-            status: MsgStatus.FAIL,
-            result: ['internal server error'],
-            userID: content.userID,
-        };
-    }
+    broker.on('create', handle);
+    broker.on('query', handle);
+    broker.on('update', handle);
+    broker.on('delete', handle);
 }
 
 /**
@@ -263,16 +152,35 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     commentDatabase = eventsConnection.comment;
     signupDatabase = eventsConnection.signup;
 
-    await Messaging.Messenger.setup(
-        RABBIT_MQ_CONFIG_PATH,
-        reqReceived,
-        [EVENT_DETAILS_SERVICE_TOPIC, EVENT_COMMENTS_SERVICE_TOPIC, EVENT_SIGNUPS_SERVICE_TOPIC],
+    const config = await loadMessengerConfiguration();
+
+    const eventIncoming = new EventValidators.EventMessageValidator();
+    const signupIncoming = new SignupValidators.SignupMessageValidator();
+    const commentIncoming = new CommentValidators.CommentMessageValidator();
+
+    const eventOutgoing = new EventValidators.EventResponseValidator();
+    const signupOutgoing = new SignupValidators.SignupResponseValidator();
+    const commentOutgoing = new CommentValidators.CommentResponseValidator();
+
+    const jointOutgoing = async (data: any) => (await eventOutgoing.validate(data))
+        || (await signupOutgoing.validate(data))
+        || (await commentOutgoing.validate(data));
+    const jointIncoming = async (data: any) => (await eventIncoming.validate(data))
+        || (await signupIncoming.validate(data))
+        || (await commentIncoming.validate(data));
+
+    const messenger: RabbitBrokerType = new RabbitNetworkHandler(
+        config,
+        jointIncoming,
+        jointOutgoing,
     );
+    messenger.onReady(() => {
+        bind(messenger);
+        tryApplyTrait('rabbitmq', true);
 
-    tryApplyTrait('rabbitmq', true);
-
-    app.listen(process.env.PORT, () => {
-        _l.info('Event micro dionysus started successfully');
+        app.listen(process.env.PORT, () => {
+            _l.info('Event micro dionysus started successfully');
+        });
     });
 }
 

@@ -1,6 +1,6 @@
 import { Db, MongoClient } from 'mongodb';
 import { defaultAfterAll, defaultAfterEach, defaultBeforeAll, defaultBeforeEach, demoSignupData, empty } from '../../utilities/setup';
-import { SignupDatabase } from '../../../src/database/type/impl/SignupDatabaseInterface';
+import { SignupDatabase } from '../../../src/database/SignupDatabaseInterface';
 
 describe('create messages of states', () => {
     let client!: MongoClient;
