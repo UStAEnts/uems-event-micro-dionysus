@@ -168,17 +168,32 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     const eventIncoming = new EventValidators.EventMessageValidator();
     const signupIncoming = new SignupValidators.SignupMessageValidator();
     const commentIncoming = new CommentValidators.CommentMessageValidator();
+    const discoverIncoming = new DiscoveryMessageValidator();
 
     const eventOutgoing = new EventValidators.EventResponseValidator();
     const signupOutgoing = new SignupValidators.SignupResponseValidator();
     const commentOutgoing = new CommentValidators.CommentResponseValidator();
+    const discoverOutgoing = new DiscoveryResponseValidator();
 
-    const jointOutgoing = async (data: any) => (await eventOutgoing.validate(data))
-        || (await signupOutgoing.validate(data))
-        || (await commentOutgoing.validate(data));
-    const jointIncoming = async (data: any) => (await eventIncoming.validate(data))
-        || (await signupIncoming.validate(data))
-        || (await commentIncoming.validate(data));
+    const failToFalse = async (pending: Promise<boolean>) => {
+        try {
+            return await pending;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    const jointOutgoing = async (data: any) => (await failToFalse(eventOutgoing.validate(data)))
+        || (await failToFalse(signupOutgoing.validate(data)))
+        || (await failToFalse(discoverOutgoing.validate(data)))
+        || (await failToFalse(commentOutgoing.validate(data)));
+    const jointIncoming = async (data: any) => {
+        console.log('testing incoming', data, '===', await failToFalse(discoverIncoming.validate(data)));
+        return (await failToFalse(eventIncoming.validate(data)))
+        || (await failToFalse(signupIncoming.validate(data)))
+        || (await failToFalse(discoverIncoming.validate(data)))
+        || (await failToFalse(commentIncoming.validate(data)));
+    }
 
     const messenger: RabbitBrokerType = new RabbitNetworkHandler(
         config,
