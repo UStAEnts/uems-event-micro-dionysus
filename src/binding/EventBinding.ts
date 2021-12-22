@@ -3,7 +3,7 @@ import { EventDatabase } from '../database/EventDatabaseInterface';
 import { _ml } from '../logging/Log';
 import { constants } from 'http2';
 
-const _b = _ml(__filename, 'signup-binding');
+const _b = _ml(__filename, 'event-binding');
 
 async function create(
     message: EventMessage.CreateEventMessage,

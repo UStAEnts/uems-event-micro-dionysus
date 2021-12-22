@@ -21,6 +21,8 @@ import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
 
+setupGlobalLogger();
+
 // @ts-ignore
 const requestTracker: ('success' | 'fail')[] & { save: (d: 'success' | 'fail') => void } = [];
 requestTracker.save = function save(d) {
