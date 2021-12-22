@@ -2,10 +2,10 @@ import { Database } from './DatabaseConnector';
 import morgan from 'morgan';
 import { EventDatabase } from './database/EventDatabaseInterface';
 import {
-    CommentMessage, CommentResponse, EventMessage, EventResponse, has, SignupMessage, SignupResponse,
+    CommentMessage, CommentResponse, DiscoveryMessage, DiscoveryResponse, EventMessage, EventResponse, has, SignupMessage, SignupResponse,
 } from '@uems/uemscommlib';
 import { SignupDatabase } from './database/SignupDatabaseInterface';
-import { _byFile } from './logging/Log';
+import { _byFile, setupGlobalLogger } from './logging/Log';
 import {
     GenericCommentDatabase, launchCheck, MessagingConfiguration, RabbitNetworkHandler, tryApplyTrait,
 } from '@uems/micro-builder/build/src';
@@ -20,6 +20,12 @@ import { CommentValidators } from '@uems/uemscommlib/build/comment/CommentValida
 import express = require('express');
 import cookieParser = require('cookie-parser');
 import DatabaseConnections = Database.DatabaseConnections;
+import DiscoverMessage = DiscoveryMessage.DiscoverMessage;
+import { DiscoveryValidators } from "@uems/uemscommlib/build/discovery/DiscoveryValidators";
+import DiscoveryMessageValidator = DiscoveryValidators.DiscoveryMessageValidator;
+import DiscoveryResponseValidator = DiscoveryValidators.DiscoveryResponseValidator;
+
+setupGlobalLogger();
 
 // @ts-ignore
 const requestTracker: ('success' | 'fail')[] & { save: (d: 'success' | 'fail') => void } = [];
@@ -47,7 +53,11 @@ const fs = require('fs').promises;
 
 const _l = _byFile(__filename);
 
-type GenericMessageTypes = CommentMessage.CommentMessage | EventMessage.EventMessage | SignupMessage.SignupMessage;
+type GenericMessageTypes =
+    CommentMessage.CommentMessage
+    | EventMessage.EventMessage
+    | SignupMessage.SignupMessage
+    | DiscoveryMessage.DiscoveryDeleteMessage;
 type CreateMessageTypes =
     CommentMessage.CreateCommentMessage
     | EventMessage.CreateEventMessage
@@ -63,15 +73,18 @@ type UpdateMessageTypes =
 type ReadMessageTypes =
     CommentMessage.ReadCommentMessage
     | EventMessage.ReadEventMessage
-    | SignupMessage.ReadSignupMessage;
+    | SignupMessage.ReadSignupMessage
+    | DiscoveryMessage.DiscoveryDeleteMessage;
 type ResponseMessageTypes =
     CommentResponse.CommentResponseMessage
     | EventResponse.EventResponseMessage
-    | SignupResponse.SignupResponseMessage;
+    | SignupResponse.SignupResponseMessage
+    | DiscoveryResponse.DiscoveryDeleteResponse;
 type ReadResponseMessageTypes =
     CommentResponse.CommentServiceReadResponseMessage
     | EventResponse.EventServiceReadResponseMessage
     | SignupResponse.SignupServiceReadResponseMessage;
+// @ts-ignore
 export type RabbitBrokerType = RabbitNetworkHandler<GenericMessageTypes, CreateMessageTypes, DeleteMessageTypes, ReadMessageTypes, UpdateMessageTypes, ResponseMessageTypes | ReadResponseMessageTypes>;
 
 // The topic used for messages destined to microservices of this type.
@@ -123,11 +136,11 @@ function bind(broker: RabbitBrokerType) {
         routingKey: string,
     ) => {
         if (routingKey.startsWith('events.signups')) {
-            await handleSignupMessage(message as SignupMessage.SignupMessage, signupDatabase, send);
+            await handleSignupMessage(message as SignupMessage.SignupMessage, signupDatabase, send, routingKey);
         } else if (routingKey.startsWith('events.comment')) {
-            await handleCommentMessage(message as CommentMessage.CommentMessage, commentDatabase, send);
+            await handleCommentMessage(message as CommentMessage.CommentMessage, commentDatabase, send, routingKey);
         } else {
-            await handleEventMessage(message as EventMessage.EventMessage, eventDatabase, send);
+            await handleEventMessage(message as EventMessage.EventMessage, eventDatabase, send, routingKey);
         }
     };
 
@@ -155,17 +168,32 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     const eventIncoming = new EventValidators.EventMessageValidator();
     const signupIncoming = new SignupValidators.SignupMessageValidator();
     const commentIncoming = new CommentValidators.CommentMessageValidator();
+    const discoverIncoming = new DiscoveryMessageValidator();
 
     const eventOutgoing = new EventValidators.EventResponseValidator();
     const signupOutgoing = new SignupValidators.SignupResponseValidator();
     const commentOutgoing = new CommentValidators.CommentResponseValidator();
+    const discoverOutgoing = new DiscoveryResponseValidator();
 
-    const jointOutgoing = async (data: any) => (await eventOutgoing.validate(data))
-        || (await signupOutgoing.validate(data))
-        || (await commentOutgoing.validate(data));
-    const jointIncoming = async (data: any) => (await eventIncoming.validate(data))
-        || (await signupIncoming.validate(data))
-        || (await commentIncoming.validate(data));
+    const failToFalse = async (pending: Promise<boolean>) => {
+        try {
+            return await pending;
+        } catch (e) {
+            return false;
+        }
+    };
+
+    const jointOutgoing = async (data: any) => (await failToFalse(eventOutgoing.validate(data)))
+        || (await failToFalse(signupOutgoing.validate(data)))
+        || (await failToFalse(discoverOutgoing.validate(data)))
+        || (await failToFalse(commentOutgoing.validate(data)));
+    const jointIncoming = async (data: any) => {
+        console.log('testing incoming', data, '===', await failToFalse(discoverIncoming.validate(data)));
+        return (await failToFalse(eventIncoming.validate(data)))
+        || (await failToFalse(signupIncoming.validate(data)))
+        || (await failToFalse(discoverIncoming.validate(data)))
+        || (await failToFalse(commentIncoming.validate(data)));
+    }
 
     const messenger: RabbitBrokerType = new RabbitNetworkHandler(
         config,

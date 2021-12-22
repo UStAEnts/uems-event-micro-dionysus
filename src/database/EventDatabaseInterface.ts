@@ -31,8 +31,8 @@ export type InDatabaseEvent = {
 export type CreateInDatabaseEvent = Omit<InDatabaseEvent, '_id'>;
 
 const dbToIn = (db: InDatabaseEvent): ShallowInternalEvent => ({
-    state: db.state,
-    ents: db.ents,
+    state: db.state === null ? undefined : db.state,
+    ents: db.ents === null ? undefined : db.ents,
     venues: db.venues,
     attendance: db.attendance,
     end: db.end,
@@ -47,8 +47,8 @@ const createToDB = (create: CreateEventMessage): CreateInDatabaseEvent => ({
     attendance: create.attendance,
     venues: create.venueIDs,
     end: create.end,
-    ents: create.entsID,
-    state: create.stateID,
+    ents: create.entsID === null ? undefined : create.entsID,
+    state: create.stateID === null ? undefined : create.stateID,
 });
 
 export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, CreateEventMessage, DeleteEventMessage, UpdateEventMessage, ShallowInternalEvent> {
@@ -244,8 +244,12 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
                 ...(request.start === undefined ? undefined : { start: request.start }),
                 ...(request.end === undefined ? undefined : { end: request.end }),
                 ...(request.attendance === undefined ? undefined : { attendance: request.attendance }),
-                ...(request.entsID === undefined ? undefined : { ents: request.entsID }),
-                ...(request.stateID === undefined ? undefined : { state: request.stateID }),
+                ...(request.entsID === undefined ? undefined : {
+                    ents: request.entsID === null ? undefined : request.entsID,
+                }),
+                ...(request.stateID === undefined ? undefined : {
+                    state: request.stateID === null ? undefined : request.stateID,
+                }),
             },
         };
 

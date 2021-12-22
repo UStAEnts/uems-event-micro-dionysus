@@ -3,7 +3,7 @@ import { _ml } from '../logging/Log';
 import { constants } from 'http2';
 import { GenericCommentDatabase } from '@uems/micro-builder/build/src';
 
-const _b = _ml(__filename, 'signup-binding');
+const _b = _ml(__filename, 'comment-binding');
 
 async function create(
     message: CommentMessage.CreateCommentMessage,
@@ -65,6 +65,7 @@ async function handleMessage(
     message: CommentMessage.CommentMessage,
     database: GenericCommentDatabase | undefined,
     send: (res: CommentResponse.CommentResponseMessage | CommentResponse.CommentServiceReadResponseMessage) => void,
+    routingKey: string,
 ): Promise<void> {
     // TODO request tracking
 

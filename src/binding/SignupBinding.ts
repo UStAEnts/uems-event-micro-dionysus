@@ -1,4 +1,4 @@
-import { SignupMessage, SignupResponse } from '@uems/uemscommlib';
+import { DiscoveryMessage, DiscoveryResponse, MsgStatus, SignupMessage, SignupResponse } from '@uems/uemscommlib';
 import { SignupDatabase } from '../database/SignupDatabaseInterface';
 import { _ml } from '../logging/Log';
 import { constants } from 'http2';
@@ -61,10 +61,102 @@ async function query(
     };
 }
 
+async function discover(
+    message: DiscoveryMessage.DiscoverMessage,
+    database: SignupDatabase,
+): Promise<DiscoveryResponse.DiscoverResponse> {
+    const result: DiscoveryResponse.DiscoverResponse = {
+        userID: message.userID,
+        status: MsgStatus.SUCCESS,
+        msg_id: message.msg_id,
+        msg_intention: 'READ',
+        restrict: 0,
+        modify: 0,
+    };
+
+    if (message.assetType === 'event') {
+        result.modify = (await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            eventID: message.assetID,
+        })).length;
+    }
+
+    if (message.assetType === 'user') {
+        result.modify = (await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            signupUser: message.assetID,
+        })).length;
+    }
+
+    return result;
+}
+
+async function removeDiscover(
+    message: DiscoveryMessage.DeleteMessage,
+    database: SignupDatabase,
+): Promise<DiscoveryResponse.DeleteResponse> {
+    const result: DiscoveryResponse.DeleteResponse = {
+        userID: message.userID,
+        status: MsgStatus.SUCCESS,
+        msg_id: message.msg_id,
+        msg_intention: 'DELETE',
+        restrict: 0,
+        modified: 0,
+        successful: false,
+    };
+
+    if (message.assetType === 'event') {
+        const entities = await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            eventID: message.assetID,
+        });
+
+        result.modified = (await Promise.all(entities.map((entity) => database.delete({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'DELETE',
+            id: entity.id,
+        })))).length;
+        result.successful = true;
+    }
+
+    if (message.assetType === 'user') {
+        const entities = await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            signupUser: message.assetID,
+        });
+
+        result.modified = (await Promise.all(entities.map((entity) => database.delete({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'DELETE',
+            id: entity.id,
+        })))).length;
+        result.successful = true;
+    }
+
+    return result;
+}
+
 async function handleMessage(
-    message: SignupMessage.SignupMessage,
+    message: SignupMessage.SignupMessage | DiscoveryMessage.DiscoveryDeleteMessage,
     database: SignupDatabase | undefined,
-    send: (res: SignupResponse.SignupResponseMessage | SignupResponse.SignupServiceReadResponseMessage) => void,
+    send: (res: SignupResponse.SignupResponseMessage | SignupResponse.SignupServiceReadResponseMessage | DiscoveryResponse.DiscoveryDeleteResponse) => void,
+    routingKey: string,
 ): Promise<void> {
     // TODO request tracking
 
@@ -72,6 +164,15 @@ async function handleMessage(
         _b.warn('query was received without a valid database connection');
         // requestTracker.save('fail');
         throw new Error('uninitialised database connection');
+    }
+
+    if (routingKey.endsWith('.discover')) {
+        send(await discover(message as DiscoveryMessage.DiscoverMessage, database));
+        return;
+    }
+    if (routingKey.endsWith('.delete')) {
+        send(await removeDiscover(message as DiscoveryMessage.DeleteMessage, database));
+        return;
     }
 
     try {
@@ -102,4 +203,5 @@ async function handleMessage(
     }
 
 }
+
 export const handleSignupMessage = handleMessage;
