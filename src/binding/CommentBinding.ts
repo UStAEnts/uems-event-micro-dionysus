@@ -1,9 +1,26 @@
-import { CommentMessage, CommentResponse } from '@uems/uemscommlib';
+import { CommentMessage, CommentResponse, MsgStatus } from '@uems/uemscommlib';
 import { _ml } from '../logging/Log';
 import { constants } from 'http2';
 import { GenericCommentDatabase } from '@uems/micro-builder/build/src';
+import { EventDatabase } from "../database/EventDatabaseInterface";
 
 const _b = _ml(__filename, 'comment-binding');
+
+async function doesAssetBelongToUser(assetID: string, userID: string, eventDatabase: EventDatabase): Promise<boolean> {
+    // Need to query the asset and make sure that it belongs to them
+    const result = await eventDatabase.query({
+        localOnly: true,
+        userID,
+        msg_intention: 'READ',
+        msg_id: 0,
+        status: 0,
+        id: assetID,
+    });
+
+    // If no results are returned then the asset identified by assetID does not belong to the user identified by
+    // userID so this needs to be rejected as they cannot read
+    return result.length !== 0;
+}
 
 async function create(
     message: CommentMessage.CreateCommentMessage,
@@ -50,7 +67,31 @@ async function remove(
 async function query(
     message: CommentMessage.ReadCommentMessage,
     database: GenericCommentDatabase,
-): Promise<(CommentResponse.CommentServiceReadResponseMessage)> {
+    eventDatabase: EventDatabase,
+): Promise<(CommentResponse.CommentServiceReadResponseMessage | CommentResponse.CommentResponseMessage)> {
+    // If its local only we need to query the event from the database to figure out if the operation should continue
+    if (message.localAssetOnly) {
+        if (message.assetID) {
+            if (!(await doesAssetBelongToUser(message.assetID, message.userID, eventDatabase))) {
+                return {
+                    msg_id: message.msg_id,
+                    userID: message.userID,
+                    msg_intention: message.msg_intention,
+                    status: MsgStatus.FAIL,
+                    result: ['No valid asset found'],
+                };
+            }
+        } else {
+            return {
+                msg_id: message.msg_id,
+                userID: message.userID,
+                msg_intention: message.msg_intention,
+                status: MsgStatus.FAIL,
+                result: ['Cannot query local without assetID'],
+            };
+        }
+    }
+
     const result = await database.query(message);
     return {
         msg_id: message.msg_id,
@@ -64,12 +105,13 @@ async function query(
 async function handleMessage(
     message: CommentMessage.CommentMessage,
     database: GenericCommentDatabase | undefined,
+    eventDatabase: EventDatabase | undefined,
     send: (res: CommentResponse.CommentResponseMessage | CommentResponse.CommentServiceReadResponseMessage) => void,
     routingKey: string,
 ): Promise<void> {
     // TODO request tracking
 
-    if (!database) {
+    if (!database || !eventDatabase) {
         _b.warn('query was received without a valid database connection');
         // requestTracker.save('fail');
         throw new Error('uninitialised database connection');
@@ -81,7 +123,7 @@ async function handleMessage(
                 send(await create(message, database));
                 break;
             case 'READ':
-                send(await query(message, database));
+                send(await query(message, database, eventDatabase));
                 break;
             case 'DELETE':
                 send(await remove(message, database));
