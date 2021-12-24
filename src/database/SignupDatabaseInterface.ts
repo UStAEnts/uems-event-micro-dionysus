@@ -133,7 +133,13 @@ export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, Crea
 
     protected deleteImpl(create: SignupMessage.DeleteSignupMessage, details: Collection): Promise<string[]> {
         if (!ObjectID.isValid(create.id)) throw new Error('invalid entity format');
-        return genericDelete({ _id: new ObjectID(create.id) }, create.id, details, this.log.bind(this));
+        const userIDFilter = create.localOnly ? { author: create.userID } : {};
+        return genericDelete(
+            { _id: new ObjectID(create.id), ...userIDFilter },
+            create.id,
+            details,
+            this.log.bind(this),
+        );
     }
 
     protected async queryImpl(
@@ -147,7 +153,8 @@ export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, Crea
 
     protected updateImpl(create: SignupMessage.UpdateSignupMessage, details: Collection): Promise<string[]> {
         if (!ObjectID.isValid(create.id)) throw new Error('invalid entity format');
-        return genericUpdate(create, ['role'], details, {}, () => {
+        const userIDFilter = create.localOnly ? { author: create.userID } : {};
+        return genericUpdate(create, ['role'], details, userIDFilter, () => {
             throw new Error('signup already exists');
         });
     }
