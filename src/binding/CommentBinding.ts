@@ -25,7 +25,31 @@ async function doesAssetBelongToUser(assetID: string, userID: string, eventDatab
 async function create(
     message: CommentMessage.CreateCommentMessage,
     database: GenericCommentDatabase,
+    eventDatabase: EventDatabase,
 ): Promise<(CommentResponse.CommentResponseMessage)> {
+    // If its local only we need to query the event from the database to figure out if the operation should continue
+    if (message.localAssetOnly) {
+        if (message.assetID) {
+            if (!(await doesAssetBelongToUser(message.assetID, message.userID, eventDatabase))) {
+                return {
+                    msg_id: message.msg_id,
+                    userID: message.userID,
+                    msg_intention: message.msg_intention,
+                    status: MsgStatus.FAIL,
+                    result: ['No valid asset found'],
+                };
+            }
+        } else {
+            return {
+                msg_id: message.msg_id,
+                userID: message.userID,
+                msg_intention: message.msg_intention,
+                status: MsgStatus.FAIL,
+                result: ['Cannot create local without assetID'],
+            };
+        }
+    }
+
     const result = await database.create(message);
     return {
         msg_id: message.msg_id,
@@ -120,7 +144,7 @@ async function handleMessage(
     try {
         switch (message.msg_intention) {
             case 'CREATE':
-                send(await create(message, database));
+                send(await create(message, database, eventDatabase));
                 break;
             case 'READ':
                 send(await query(message, database, eventDatabase));
