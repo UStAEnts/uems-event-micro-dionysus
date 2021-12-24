@@ -219,6 +219,10 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             };
         }
 
+        if (request.localOnly) {
+            query.author = request.userID;
+        }
+
         return query;
     }
 
@@ -281,7 +285,8 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
 
         let result;
         try {
-            result = await details.updateOne({ _id: new ObjectID(request.id) }, update);
+            const userIDFilter = request.localOnly ? { author: request.userID } : {};
+            result = await details.updateOne({ _id: new ObjectID(request.id), ...userIDFilter }, update);
         } catch (e) {
             if (e.code === 11000) {
                 throw new ClientFacingError('duplicate entity provided');
