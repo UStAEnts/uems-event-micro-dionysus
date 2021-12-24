@@ -42,6 +42,7 @@ export const demoEventData: InDatabaseEvent[] = [
         start: 1612686824,
         venues: ['doll price', 'fraction fold'],
         attendance: 140,
+        author: 'throughful earthquake',
     },
     {
         _id: new ObjectId('6001f0d62712ee177867dcbc'),
@@ -52,6 +53,7 @@ export const demoEventData: InDatabaseEvent[] = [
         start: 1612686824,
         venues: ['dominant weave', 'doll price'],
         attendance: 185,
+        author: 'throughful earthquake',
     },
     {
         _id: new ObjectId('6001f0d62712ee177867dcbd'),
@@ -62,6 +64,7 @@ export const demoEventData: InDatabaseEvent[] = [
         start: 1611537944,
         venues: ['rubbish response', 'fraction fold'],
         attendance: 300,
+        author: 'throughful earthquake',
     },
 ];
 
