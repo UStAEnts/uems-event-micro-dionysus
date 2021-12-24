@@ -53,7 +53,7 @@ export const demoEventData: InDatabaseEvent[] = [
         start: 1612686824,
         venues: ['dominant weave', 'doll price'],
         attendance: 185,
-        author: 'throughful earthquake',
+        author: 'asylum movement',
     },
     {
         _id: new ObjectId('6001f0d62712ee177867dcbd'),
