@@ -26,6 +26,7 @@ export type InDatabaseEvent = {
     attendance: number,
     ents?: string,
     state?: string,
+    author: string,
 };
 
 export type CreateInDatabaseEvent = Omit<InDatabaseEvent, '_id'>;
@@ -39,6 +40,7 @@ const dbToIn = (db: InDatabaseEvent): ShallowInternalEvent => ({
     id: db._id.toHexString(),
     name: db.name,
     start: db.start,
+    author: db.author,
 });
 
 const createToDB = (create: CreateEventMessage): CreateInDatabaseEvent => ({
@@ -49,6 +51,7 @@ const createToDB = (create: CreateEventMessage): CreateInDatabaseEvent => ({
     end: create.end,
     ents: create.entsID === null ? undefined : create.entsID,
     state: create.stateID === null ? undefined : create.stateID,
+    author: create.userID,
 });
 
 export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, CreateEventMessage, DeleteEventMessage, UpdateEventMessage, ShallowInternalEvent> {
@@ -216,6 +219,10 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             };
         }
 
+        if (request.localOnly) {
+            query.author = request.userID;
+        }
+
         return query;
     }
 
@@ -278,7 +285,8 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
 
         let result;
         try {
-            result = await details.updateOne({ _id: new ObjectID(request.id) }, update);
+            const userIDFilter = request.localOnly ? { author: request.userID } : {};
+            result = await details.updateOne({ _id: new ObjectID(request.id), ...userIDFilter }, update);
         } catch (e) {
             if (e.code === 11000) {
                 throw new ClientFacingError('duplicate entity provided');

@@ -138,7 +138,13 @@ function bind(broker: RabbitBrokerType) {
         if (routingKey.startsWith('events.signups')) {
             await handleSignupMessage(message as SignupMessage.SignupMessage, signupDatabase, send, routingKey);
         } else if (routingKey.startsWith('events.comment')) {
-            await handleCommentMessage(message as CommentMessage.CommentMessage, commentDatabase, send, routingKey);
+            await handleCommentMessage(
+                message as CommentMessage.CommentMessage,
+                commentDatabase,
+                eventDatabase,
+                send,
+                routingKey,
+            );
         } else {
             await handleEventMessage(message as EventMessage.EventMessage, eventDatabase, send, routingKey);
         }
@@ -190,9 +196,9 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
     const jointIncoming = async (data: any) => {
         console.log('testing incoming', data, '===', await failToFalse(discoverIncoming.validate(data)));
         return (await failToFalse(eventIncoming.validate(data)))
-        || (await failToFalse(signupIncoming.validate(data)))
-        || (await failToFalse(discoverIncoming.validate(data)))
-        || (await failToFalse(commentIncoming.validate(data)));
+            || (await failToFalse(signupIncoming.validate(data)))
+            || (await failToFalse(discoverIncoming.validate(data)))
+            || (await failToFalse(commentIncoming.validate(data)));
     }
 
     const messenger: RabbitBrokerType = new RabbitNetworkHandler(

@@ -147,4 +147,19 @@ describe('create messages of states', () => {
             .toContain('venus garlic');
     });
 
+    it('should limit results when querying with local only', async () => {
+        const query = await eventDB.query({
+            ...empty('READ'),
+            localOnly: true,
+            userID: 'asylum movement',
+        });
+
+        expect(query)
+            .toHaveLength(1);
+        expect(query[0])
+            .toHaveProperty('name', 'recommendation migration');
+        expect(query[0])
+            .toHaveProperty('state', 'teacher inside');
+    });
+
 });
