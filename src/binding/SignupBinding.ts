@@ -74,6 +74,19 @@ async function discover(
         modify: 0,
     };
 
+    if (message.assetType === 'signup') {
+        const userIDFilter = message.localAssetOnly ? { signupUser: message.userID } : {};
+
+        result.modify = (await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            id: message.assetID,
+            ...userIDFilter,
+        })).length;
+    }
+
     if (message.assetType === 'event') {
         result.modify = (await database.query({
             msg_id: message.msg_id,
@@ -145,6 +158,29 @@ async function removeDiscover(
             status: 0,
             msg_intention: 'DELETE',
             id: entity.id,
+        })))).length;
+        result.successful = true;
+    }
+
+    if (message.assetType === 'signup') {
+        const userIDFilter = message.localAssetOnly ? { signupUser: message.userID } : {};
+
+        const entities = await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            signupUser: message.assetID,
+            ...userIDFilter,
+        });
+
+        result.modified = (await Promise.all(entities.map((entity) => database.delete({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'DELETE',
+            id: entity.id,
+            ...userIDFilter,
         })))).length;
         result.successful = true;
     }
