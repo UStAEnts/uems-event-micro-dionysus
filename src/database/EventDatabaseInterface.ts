@@ -223,6 +223,12 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             query.author = request.userID;
         }
 
+        if (request.stateIn) {
+            query.state = {
+                $in: request.stateIn,
+            };
+        }
+
         return query;
     }
 
