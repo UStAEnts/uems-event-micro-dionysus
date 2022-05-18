@@ -15,6 +15,7 @@ async function create(
         userID: message.userID,
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
+        requestID: message.requestID,
         result,
     };
 }
@@ -29,6 +30,7 @@ async function update(
         userID: message.userID,
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
+        requestID: message.requestID,
         result,
     };
 }
@@ -43,6 +45,7 @@ async function remove(
         userID: message.userID,
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
+        requestID: message.requestID,
         result,
     };
 }
@@ -57,6 +60,7 @@ async function query(
         userID: message.userID,
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
+        requestID: message.requestID,
         result,
     };
 }
@@ -79,6 +83,7 @@ async function discover(
             msg_intention: message.msg_intention,
             modify: 0,
             restrict: 0,
+            requestID: message.requestID,
         };
     }
 
@@ -89,6 +94,7 @@ async function discover(
         msg_intention: 'READ',
         restrict: 0,
         modify: 0,
+        requestID: message.requestID,
     };
 
     if (message.assetType === 'venue') {
@@ -98,6 +104,7 @@ async function discover(
             status: 0,
             msg_intention: 'READ',
             anyVenues: [message.assetID],
+            requestID: message.requestID,
         })).length;
         _b.debug(`Discovery of venue returned restrict.${result.restrict} records`);
         return result;
@@ -110,6 +117,7 @@ async function discover(
             status: 0,
             msg_intention: 'READ',
             entsID: message.assetID,
+            requestID: message.requestID,
         })).length;
         _b.debug(`Discovery of ent state returned modify.${result.modify} records`);
         return result;
@@ -122,6 +130,7 @@ async function discover(
             status: 0,
             msg_intention: 'READ',
             stateID: message.assetID,
+            requestID: message.requestID,
         })).length;
         _b.debug(`Discovery of state returned modify.${result.modify} records`);
         return result;
@@ -134,6 +143,7 @@ async function discover(
             status: 0,
             msg_intention: 'READ',
             id: message.assetID,
+            requestID: message.requestID,
         })).length;
         _b.debug(`Discovery of event returned modify.${result.modify} records`);
         return result;
@@ -157,6 +167,7 @@ async function removeDiscover(
             modified: 0,
             restrict: 0,
             successful: true,
+            requestID: message.requestID,
         };
     }
 
@@ -168,6 +179,7 @@ async function removeDiscover(
         restrict: 0,
         modified: 0,
         successful: false,
+        requestID: message.requestID,
     };
 
     if (message.assetType === 'ent') {
@@ -294,12 +306,14 @@ async function handleMessage(
                 throw new Error('invalid message intention');
         }
     } catch (e) {
+        console.error(e);
         send({
             msg_id: message.msg_id,
             userID: message.userID,
             msg_intention: message.msg_intention,
             status: 405,
             result: [e.message],
+            requestID: message.requestID,
         });
     }
 

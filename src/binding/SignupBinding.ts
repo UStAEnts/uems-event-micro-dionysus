@@ -16,6 +16,7 @@ async function create(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -30,6 +31,7 @@ async function update(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -44,6 +46,7 @@ async function remove(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -58,6 +61,7 @@ async function query(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -72,6 +76,7 @@ async function discover(
         msg_intention: 'READ',
         restrict: 0,
         modify: 0,
+        requestID: message.requestID,
     };
 
     if (message.assetType === 'signup') {
@@ -122,6 +127,7 @@ async function removeDiscover(
         restrict: 0,
         modified: 0,
         successful: false,
+        requestID: message.requestID,
     };
 
     if (message.assetType === 'event') {
@@ -235,6 +241,7 @@ async function handleMessage(
             msg_intention: message.msg_intention,
             status: 405,
             result: [e.message],
+            requestID: message.requestID,
         });
     }
 

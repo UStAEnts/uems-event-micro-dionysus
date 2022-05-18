@@ -37,6 +37,7 @@ async function create(
                     msg_intention: message.msg_intention,
                     status: MsgStatus.FAIL,
                     result: ['No valid asset found'],
+                    requestID: message.requestID,
                 };
             }
         } else {
@@ -46,6 +47,7 @@ async function create(
                 msg_intention: message.msg_intention,
                 status: MsgStatus.FAIL,
                 result: ['Cannot create local without assetID'],
+                requestID: message.requestID,
             };
         }
     }
@@ -57,6 +59,7 @@ async function create(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -71,6 +74,7 @@ async function update(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -85,6 +89,7 @@ async function remove(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -103,6 +108,7 @@ async function query(
                     msg_intention: message.msg_intention,
                     status: MsgStatus.FAIL,
                     result: ['No valid asset found'],
+                    requestID: message.requestID,
                 };
             }
         } else {
@@ -112,6 +118,7 @@ async function query(
                 msg_intention: message.msg_intention,
                 status: MsgStatus.FAIL,
                 result: ['Cannot query local without assetID'],
+                requestID: message.requestID,
             };
         }
     }
@@ -123,6 +130,7 @@ async function query(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -165,6 +173,7 @@ async function handleMessage(
             msg_intention: message.msg_intention,
             status: 405,
             result: [e.message],
+            requestID: message.requestID,
         });
     }
 
