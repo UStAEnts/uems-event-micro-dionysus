@@ -9,7 +9,9 @@ import DeleteEventMessage = EventMessage.DeleteEventMessage;
 import UpdateEventMessage = EventMessage.UpdateEventMessage;
 import { ClientFacingError, genericCreate, genericDelete, GenericMongoDatabase, MongoDBConfiguration } from "@uems/micro-builder/build/src";
 import { _byFile } from "../logging/Log";
+import log from "@uems/micro-builder/build/src/logging/Log";
 
+const _ = log.auto;
 const _l = _byFile(__filename);
 // TODO: move to uems comms library
 export type Changelog = {
@@ -67,18 +69,18 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
     constructor(configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration['collections']) {
         super(configurationOrDB, collections);
 
-        const register = (details: Collection) => {
-            details.createIndex({ name: 'text' }, { unique: true });
-        };
+        // const register = (details: Collection) => {
+        //     details.createIndex({ name: 'text' }, { unique: true });
+        // };
 
-        if (this._details) {
-            register(this._details);
-        } else {
-            this.once('ready', () => {
-                if (!this._details) throw new Error('Details db was not initialised on ready');
-                register(this._details);
-            });
-        }
+        // if (this._details) {
+        //     register(this._details);
+        // } else {
+        //     this.once('ready', () => {
+        //         if (!this._details) throw new Error('Details db was not initialised on ready');
+        //         register(this._details);
+        //     });
+        // }
     }
 
     private static convertReadRequestToDatabaseQuery(request: ReadEventMessage) {
@@ -234,7 +236,7 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             };
         }
 
-        if (request.reserved !== undefined){
+        if (request.reserved !== undefined) {
             query.reserved = request.reserved;
         }
 
@@ -307,13 +309,29 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
         let result;
         try {
             const userIDFilter = request.localOnly ? { author: request.userID } : {};
+
+            if (request.requestID) {
+                _(request.requestID)
+                    .trace('executing query with filter', update, userIDFilter);
+            }
+
             result = await details.updateOne({ _id: new ObjectID(request.id), ...userIDFilter }, update);
         } catch (e) {
+            if (request.requestID) {
+                _(request.requestID)
+                    .debug('received error', e);
+            }
+
             if (e.code === 11000) {
                 throw new ClientFacingError('duplicate entity provided');
             }
 
             throw e;
+        }
+
+        if (request.requestID) {
+            _(request.requestID)
+                .trace('got result', result);
         }
 
         if (result.matchedCount === 0) {
