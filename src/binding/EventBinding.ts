@@ -2,8 +2,10 @@ import { DiscoveryMessage, DiscoveryResponse, EventMessage, EventResponse, MsgSt
 import { EventDatabase } from '../database/EventDatabaseInterface';
 import { _ml } from '../logging/Log';
 import { constants } from 'http2';
+import log from '@uems/micro-builder/build/src/logging/Log';
 
 const _b = _ml(__filename, 'event-binding');
+const _ = log.auto;
 
 async function create(
     message: EventMessage.CreateEventMessage,
@@ -271,10 +273,14 @@ async function handleMessage(
     routingKey: string,
 ): Promise<void> {
     // TODO request tracking
+    const start = Date.now();
+    const finish = () => (message.requestID ? _(message.requestID) : _.system)
+        .trace(`request was resolved in events in ${Date.now() - start}ms`);
 
     if (!database) {
         _b.warn('query was received without a valid database connection');
         // requestTracker.save('fail');
+        finish();
         throw new Error('uninitialised database connection');
     }
 
@@ -282,10 +288,12 @@ async function handleMessage(
     try {
         if (routingKey.endsWith('.discover')) {
             send(await discover(message as DiscoveryMessage.DiscoverMessage, database));
+            finish();
             return;
         }
         if (routingKey.endsWith('.delete')) {
             send(await removeDiscover(message as DiscoveryMessage.DeleteMessage, database));
+            finish();
             return;
         }
 
@@ -305,6 +313,7 @@ async function handleMessage(
             default:
                 throw new Error('invalid message intention');
         }
+        finish();
     } catch (e) {
         console.error(e);
         send({
@@ -315,6 +324,7 @@ async function handleMessage(
             result: [e.message],
             requestID: message.requestID,
         });
+        finish();
     }
 
 }
