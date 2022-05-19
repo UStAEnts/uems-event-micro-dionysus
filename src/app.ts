@@ -24,6 +24,8 @@ import DiscoverMessage = DiscoveryMessage.DiscoverMessage;
 import { DiscoveryValidators } from "@uems/uemscommlib/build/discovery/DiscoveryValidators";
 import DiscoveryMessageValidator = DiscoveryValidators.DiscoveryMessageValidator;
 import DiscoveryResponseValidator = DiscoveryValidators.DiscoveryResponseValidator;
+import { configure as configureLog } from '@uems/micro-builder/build/src/logging/Log';
+import AMQPTransport from '@uems/micro-builder/build/src/logging/AMQPTransport';
 
 setupGlobalLogger();
 
@@ -194,12 +196,17 @@ async function databaseConnectionReady(eventsConnection: DatabaseConnections) {
         || (await failToFalse(discoverOutgoing.validate(data)))
         || (await failToFalse(commentOutgoing.validate(data)));
     const jointIncoming = async (data: any) => {
-        console.log('testing incoming', data, '===', await failToFalse(discoverIncoming.validate(data)));
+        // console.log('testing incoming', data, '===', await failToFalse(discoverIncoming.validate(data)));
         return (await failToFalse(eventIncoming.validate(data)))
             || (await failToFalse(signupIncoming.validate(data)))
             || (await failToFalse(discoverIncoming.validate(data)))
             || (await failToFalse(commentIncoming.validate(data)));
-    }
+    };
+
+    configureLog({
+        module: 'events',
+        transports: [await AMQPTransport(config.options)],
+    }, 'merge');
 
     const messenger: RabbitBrokerType = new RabbitNetworkHandler(
         config,
