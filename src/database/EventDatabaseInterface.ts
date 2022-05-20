@@ -69,18 +69,18 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
     constructor(configurationOrDB: MongoDBConfiguration | Db, collections?: MongoDBConfiguration['collections']) {
         super(configurationOrDB, collections);
 
-        // const register = (details: Collection) => {
-        //     details.createIndex({ name: 'text' }, { unique: true });
-        // };
+        const register = (details: Collection) => {
+            details.createIndex({ name: 'text' });
+        };
 
-        // if (this._details) {
-        //     register(this._details);
-        // } else {
-        //     this.once('ready', () => {
-        //         if (!this._details) throw new Error('Details db was not initialised on ready');
-        //         register(this._details);
-        //     });
-        // }
+        if (this._details) {
+            register(this._details);
+        } else {
+            this.once('ready', () => {
+                if (!this._details) throw new Error('Details db was not initialised on ready');
+                register(this._details);
+            });
+        }
     }
 
     private static convertReadRequestToDatabaseQuery(request: ReadEventMessage) {
