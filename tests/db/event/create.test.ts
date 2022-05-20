@@ -70,7 +70,19 @@ describe('create messages of states', () => {
             .toHaveProperty('venues', ['a', 'b']);
         expect(query[0])
             .toHaveProperty('attendance', 1245);
-        expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'state', 'ents', 'end', 'start', 'venues', 'attendance', 'author']));
+        // TODO: migrate to value from uemscommlib
+        expect(haveNoAdditionalKeys(query[0], [
+            'id',
+            'name',
+            'state',
+            'ents',
+            'end',
+            'start',
+            'venues',
+            'attendance',
+            'author',
+            'reserved',
+        ]));
     });
 
     it('should not add additional properties on create objects', async () => {
@@ -112,6 +124,18 @@ describe('create messages of states', () => {
             .toHaveProperty('venues', ['a', 'b']);
         expect(query[0])
             .toHaveProperty('attendance', 1245);
-        expect(haveNoAdditionalKeys(query[0], ['id', 'name', 'state', 'ents', 'end', 'start', 'venues', 'attendance', 'author']));
+        // TODO: migrate to value from uemscommlib
+        expect(haveNoAdditionalKeys(query[0], [
+            'id',
+            'name',
+            'state',
+            'ents',
+            'end',
+            'start',
+            'venues',
+            'attendance',
+            'author',
+            'reserved',
+        ]));
     });
 });

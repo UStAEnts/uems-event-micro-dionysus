@@ -16,6 +16,7 @@ async function create(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -30,6 +31,7 @@ async function update(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -44,6 +46,7 @@ async function remove(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -58,6 +61,7 @@ async function query(
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
         result,
+        requestID: message.requestID,
     };
 }
 
@@ -72,7 +76,21 @@ async function discover(
         msg_intention: 'READ',
         restrict: 0,
         modify: 0,
+        requestID: message.requestID,
     };
+
+    if (message.assetType === 'signup') {
+        const userIDFilter = message.localAssetOnly ? { signupUser: message.userID } : {};
+
+        result.modify = (await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            id: message.assetID,
+            ...userIDFilter,
+        })).length;
+    }
 
     if (message.assetType === 'event') {
         result.modify = (await database.query({
@@ -109,6 +127,7 @@ async function removeDiscover(
         restrict: 0,
         modified: 0,
         successful: false,
+        requestID: message.requestID,
     };
 
     if (message.assetType === 'event') {
@@ -145,6 +164,29 @@ async function removeDiscover(
             status: 0,
             msg_intention: 'DELETE',
             id: entity.id,
+        })))).length;
+        result.successful = true;
+    }
+
+    if (message.assetType === 'signup') {
+        const userIDFilter = message.localAssetOnly ? { signupUser: message.userID } : {};
+
+        const entities = await database.query({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'READ',
+            signupUser: message.assetID,
+            ...userIDFilter,
+        });
+
+        result.modified = (await Promise.all(entities.map((entity) => database.delete({
+            msg_id: message.msg_id,
+            userID: 'anonymous',
+            status: 0,
+            msg_intention: 'DELETE',
+            id: entity.id,
+            ...userIDFilter,
         })))).length;
         result.successful = true;
     }
@@ -199,6 +241,7 @@ async function handleMessage(
             msg_intention: message.msg_intention,
             status: 405,
             result: [e.message],
+            requestID: message.requestID,
         });
     }
 

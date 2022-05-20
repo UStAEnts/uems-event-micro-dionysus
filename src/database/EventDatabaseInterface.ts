@@ -8,7 +8,11 @@ import CreateEventMessage = EventMessage.CreateEventMessage;
 import DeleteEventMessage = EventMessage.DeleteEventMessage;
 import UpdateEventMessage = EventMessage.UpdateEventMessage;
 import { ClientFacingError, genericCreate, genericDelete, GenericMongoDatabase, MongoDBConfiguration } from "@uems/micro-builder/build/src";
+import { _byFile } from "../logging/Log";
+import log from "@uems/micro-builder/build/src/logging/Log";
 
+const _ = log.auto;
+const _l = _byFile(__filename);
 // TODO: move to uems comms library
 export type Changelog = {
     id: string,
@@ -27,6 +31,7 @@ export type InDatabaseEvent = {
     ents?: string,
     state?: string,
     author: string,
+    reserved?: boolean,
 };
 
 export type CreateInDatabaseEvent = Omit<InDatabaseEvent, '_id'>;
@@ -41,6 +46,7 @@ const dbToIn = (db: InDatabaseEvent): ShallowInternalEvent => ({
     name: db.name,
     start: db.start,
     author: db.author,
+    reserved: db.reserved,
 });
 
 const createToDB = (create: CreateEventMessage): CreateInDatabaseEvent => ({
@@ -52,6 +58,7 @@ const createToDB = (create: CreateEventMessage): CreateInDatabaseEvent => ({
     ents: create.entsID === null ? undefined : create.entsID,
     state: create.stateID === null ? undefined : create.stateID,
     author: create.userID,
+    reserved: create.reserved,
 });
 
 export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, CreateEventMessage, DeleteEventMessage, UpdateEventMessage, ShallowInternalEvent> {
@@ -63,7 +70,7 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
         super(configurationOrDB, collections);
 
         const register = (details: Collection) => {
-            details.createIndex({ name: 'text' }, { unique: true });
+            details.createIndex({ name: 'text' });
         };
 
         if (this._details) {
@@ -223,6 +230,18 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             query.author = request.userID;
         }
 
+        if (request.stateIn) {
+            query.state = {
+                $in: request.stateIn,
+            };
+        }
+
+        if (request.reserved !== undefined) {
+            query.reserved = request.reserved;
+        }
+
+        _l.debug('Executed request:', query);
+
         return query;
     }
 
@@ -240,7 +259,8 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
         details: Collection,
     ): Promise<EventResponse.ShallowInternalEvent[]> {
         return (await details.find(EventDatabase.convertReadRequestToDatabaseQuery(create))
-            .toArray()).map(dbToIn);
+            .toArray())
+            .map(dbToIn);
     }
 
     protected async updateImpl(request: EventMessage.UpdateEventMessage, details: Collection): Promise<string[]> {
@@ -256,6 +276,9 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
                 }),
                 ...(request.stateID === undefined ? undefined : {
                     state: request.stateID === null ? undefined : request.stateID,
+                }),
+                ...(request.reserved === undefined ? undefined : {
+                    reserved: request.reserved,
                 }),
             },
         };
@@ -286,13 +309,29 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
         let result;
         try {
             const userIDFilter = request.localOnly ? { author: request.userID } : {};
+
+            if (request.requestID) {
+                _(request.requestID)
+                    .trace('executing query with filter', update, userIDFilter);
+            }
+
             result = await details.updateOne({ _id: new ObjectID(request.id), ...userIDFilter }, update);
         } catch (e) {
+            if (request.requestID) {
+                _(request.requestID)
+                    .debug('received error', e);
+            }
+
             if (e.code === 11000) {
                 throw new ClientFacingError('duplicate entity provided');
             }
 
             throw e;
+        }
+
+        if (request.requestID) {
+            _(request.requestID)
+                .trace('got result', result);
         }
 
         if (result.matchedCount === 0) {
