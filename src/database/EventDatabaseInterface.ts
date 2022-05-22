@@ -86,11 +86,22 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
     private static convertReadRequestToDatabaseQuery(request: ReadEventMessage) {
         const query: FilterQuery<ShallowInternalEvent> = {};
 
+        if (request.requestID) {
+            _(request.requestID)
+                .trace('got request', request);
+        }
         if (request.id !== undefined) {
-            if (ObjectID.isValid(request.id)) {
-                query._id = new ObjectID(request.id);
+            if (typeof (request.id) === 'string') {
+                if (ObjectID.isValid(request.id)) {
+                    query._id = new ObjectID(request.id);
+                } else {
+                    throw new Error('Invalid ID');
+                }
             } else {
-                throw new Error('Invalid ID');
+                if (request.id.some((e) => !ObjectID.isValid(e))) throw new Error('Invalid ID');
+                query._id = {
+                    $in: request.id.map((e) => new ObjectID(e)),
+                };
             }
         }
 
@@ -240,7 +251,10 @@ export class EventDatabase extends GenericMongoDatabase<ReadEventMessage, Create
             query.reserved = request.reserved;
         }
 
-        _l.debug('Executed request:', query);
+        if (request.requestID) {
+            _(request.requestID)
+                .debug('Executed request:', query);
+        }
 
         return query;
     }
