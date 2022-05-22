@@ -275,7 +275,7 @@ async function handleMessage(
     // TODO request tracking
     const start = Date.now();
     const finish = () => (message.requestID ? _(message.requestID) : _.system)
-        .trace(`request was resolved in events in ${Date.now() - start}ms`);
+        .trace(`request for ${message.msg_id} was resolved in events in ${Date.now() - start}ms`);
 
     if (!database) {
         _b.warn('query was received without a valid database connection');

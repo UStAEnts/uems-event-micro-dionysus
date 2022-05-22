@@ -123,13 +123,40 @@ async function query(
         }
     }
 
-    const result = await database.query(message);
+    if (typeof (message.id) === 'undefined' || typeof (message.id) === 'string') {
+        // Weird but.. okay?
+        const result = await database.query({
+            ...message,
+            id: message.id,
+        });
+
+        return {
+            msg_id: message.msg_id,
+            userID: message.userID,
+            msg_intention: message.msg_intention,
+            status: constants.HTTP_STATUS_OK,
+            result,
+            requestID: message.requestID,
+        };
+    }
+
+    const settled = await Promise.allSettled(message.id.map((e) => ({
+        ...message,
+        id: e,
+    }))
+        .map((e) => database.query(e)));
+
+    const resolved = settled
+        .filter((e) => e.status === 'fulfilled')
+        .map((e) => (e.status === 'fulfilled' ? e.value : []))
+        .flat();
+
     return {
         msg_id: message.msg_id,
         userID: message.userID,
         msg_intention: message.msg_intention,
         status: constants.HTTP_STATUS_OK,
-        result,
+        result: resolved,
         requestID: message.requestID,
     };
 }
