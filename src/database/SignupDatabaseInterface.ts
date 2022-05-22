@@ -69,10 +69,17 @@ export class SignupDatabase extends GenericMongoDatabase<ReadSignupMessage, Crea
         const query: FilterQuery<ShallowInternalSignup> = {};
 
         if (request.id !== undefined) {
-            if (ObjectID.isValid(request.id)) {
-                query._id = new ObjectID(request.id);
+            if (typeof (request.id) === 'string') {
+                if (ObjectID.isValid(request.id)) {
+                    query._id = new ObjectID(request.id);
+                } else {
+                    throw new Error('Invalid ID');
+                }
             } else {
-                throw new Error('Invalid ID');
+                if (request.id.some((e) => !ObjectID.isValid(e))) throw new Error('Invalid ID');
+                query._id = {
+                    $in: request.id.map((e) => new ObjectID(e)),
+                };
             }
         }
 
